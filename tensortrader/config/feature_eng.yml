@@ -1,0 +1,76 @@
+Feature_Engineering:
+    1:
+      ta: 
+        - 
+          "kind": "sma"
+          "length": 10
+          "offset":  1 # since at the t the final close price is not available
+        - 
+          "kind": "sma" 
+          "length": 60
+          "offset":  1 
+        - 
+          "kind": "vwma" 
+          "length": 10
+          "offset":  1 
+        - 
+          "kind": "vwma" 
+          "length": 60
+          "offset":  1 
+        -
+          "kind": "bbands"
+          "length": 10
+          "offset":  1 
+        - 
+          "kind": "bbands"
+          "length": 60
+          "offset":  1 
+        - 
+          "kind": "macd"
+          "fast": 5
+          "slow": 60
+          "offset":  1 
+        - 
+          "kind": "rsi" 
+          "length": 10 
+          "offset":  1 
+        - 
+          "kind": "atr"
+          "length": 10
+          "offset":  1 
+        - 
+          'kind': "pdist"
+          "offset":  1 
+      
+      'include_lags': False
+      'lags': [1,3,5,15,30]
+      'ref_variable_lags' : ["Close"]
+      'drop_lags': False
+
+      'Volume_Features': True
+      'Volume_Col': 'Volume'
+      'Volume_Windows': [5, 30]
+      'Volume_Returns': True 
+
+      'Volume_Returns_lags': [5, 15]
+      'Volume_Returns_binary': False
+
+      'EntryPrice_PrevClose': False
+      'lags_diff' : [1,15,30,60]
+      'binary_lags': False
+
+      'Return_Features': True
+      'return_lags': [1, 5, 15, 60, 240]
+      'return_lags_variable' : 'Close'
+      'Momentum_Features': False
+
+      'Time_Features': True
+      'Time_Fourier_Features': False
+
+      'use_prob_features': True
+      'probability_features' : ['entry_type', 'risk_type']
+      'Prob_Features_Windows': [2,6]
+
+      'Apply_Standard_Scaler': True
+      'Apply_Standard_Scaler_Lags': False
+      'Standard_Scaler_Cols': ['Volume', 'Number of Trades']

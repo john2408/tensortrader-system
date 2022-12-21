@@ -1,0 +1,120 @@
+# -----------------------------
+# Initial Parameters
+# -----------------------------
+#symbols : ['ETHUSDT', 'BTCUSDT','DOGEUSDT']
+n_days : 30 # Number of days to load for historical data
+years_filter : [2022]
+input_folder_db : "/mnt/c/Tensor/Database/Cryptos/"
+imbalance_classes_mode : "class_weights" #  class_weights or oversampling
+
+# Possible Combinations:
+# (1) label_mode: return & target_type: regression
+# (2) label_mode: return & target_type: classification
+# (3) label_mode: TBM & target_type: classification
+
+label_mode : 'return' # TBM or return
+target_type : 'classification' # classification or regression
+calculate_feat_importance : False
+
+# -----------------------------
+# Return Signals Parameters
+# -----------------------------
+
+return_lag : 1
+long_short : [3,1]
+timestamp_col : 'Date'
+variable : 'Close' 
+
+# -----------------------------
+# Triple Barrier Parameters
+# -----------------------------
+
+# Profit-Stop Loss ratio
+ptsl : [3,1] # example [3,1] Target will be 4 times the std, and stop 1 time
+pt : 1 # Position Type 1: Long, -1: Short (NOT WORKING -1 for SHORT)
+v_barrier_minutes : 10
+
+
+# For parallel labels computing
+n_jobs : -2
+max_nbytes : '0.8M'
+parallel_calculation : False
+
+# -----------------------------
+# Resampling Paramters
+# -----------------------------
+use_resampling : True
+resampling : '5Min'
+
+# -----------------------------
+# Volatility Parameters
+# -----------------------------
+
+# number of candles to considered for volatility
+span_volatility : 30
+volatility_freq : 1 # In minutes/ or candle bar frequency
+outlier_cutoff : 0.01
+
+# -----------------------------
+# Model Parameters
+# -----------------------------
+date_idx : "Date"
+model_type : "XGB"
+n_top_features : 20
+max_n_estimators : 400
+
+# For Classification
+eval_metric_class : 'auc'
+objective_class : 'multi:softmax' 
+grow_policy_class : 'lossguide' 
+booster_class : 'gbtree'
+
+# For Regression
+eval_metric_regress : 'rmse' 
+objective_regress : 'reg:squarederror'
+grow_policy_regress : 'lossguide' 
+booster_regress : 'gbtree'
+
+# max_learning_rate
+# max_max_depth
+model_name : "XGB_TBM_Model.pkl"
+backtesting_file: "XGB_TBM_Backtesting.parquet"
+
+
+# -----------------------------
+# Feature Engineering
+# -----------------------------
+feature_id : 1
+conf_path : '../config/feature_eng.yml'
+
+# -----------------------------
+# Feature Selection
+# -----------------------------
+train_size : 0.7
+mode : "mean_decrease"
+cols_to_drop : ['Date', 'Open Time', 'Open', 'High', 'Low', 'Close', 'Volume',
+    'Clos Time', 'Quote Asset Volume', 'Number of Trades',
+    'Taker Buy Base Asset Volume', 'Taker Buy Quote Asset Volume', 'Ignore',
+    'Year', 'threshold', 't1', 'label','timestamp']
+# Categorical Columns
+cat_columns : 'Ticker'
+
+# -----------------------------
+# Model Training
+# -----------------------------
+n_splits : 3 # Number of folds
+n_iter : 5 # Number of iterations for Bayesian Hyperparameter Optimizer
+test_period_length : 45 # candles 
+
+# None == Use all historical data available 
+# Int Value == Number of minutes to consider
+train_period_length : 'None' 
+
+# Gap between training indeces and test indeces 
+# to account for data or processes latency
+gap : 3
+
+# -----------------------------
+# Cost Analysis
+# -----------------------------
+trading_fee : 0.001 # Binance Trainding Fee
