@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+
+import pytz
 import datetime
 
 
@@ -38,3 +40,16 @@ def todatetime(t):
     Convert Unix timestamp to datetime.
     """
     return datetime.fromtimestamp(t/1000)
+
+def utc_to_local(utc_dt : datetime.datetime, local_tz: pytz.tzfile ) -> datetime.datetime:
+    """Convert UTC datetime to local time
+
+    Args:
+        utc_dt (datetime): datetime date
+        local_tz (pytz.tzfile): local time zone object
+
+    Returns:
+        datetime: transformed datetime object
+    """
+    local_dt = utc_dt.replace(tzinfo=pytz.utc).astimezone(local_tz)
+    return local_dt

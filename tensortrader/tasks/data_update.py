@@ -8,7 +8,7 @@ from tensortrader.constants import *
 # export PYTHONPATH="${PYTHONPATH}:/mnt/d/Tensor/tensortrader-system"
 # Logging Config
 current_date = datetime.now().strftime("%Y-%m-%d-%H-%M")
-LOG_FILENAME = os.path.join( Path(os.getcwd()).parents[0].parents[0], 'logs',  f"{current_date}_Daily_candles_update.log")
+LOG_FILENAME = os.path.join( Path(os.getcwd()).parents[0].parents[0], 'logs/data_update_logs',  f"{current_date}_Daily_candles_update.log")
 
 print("Logging data at ", LOG_FILENAME)
 

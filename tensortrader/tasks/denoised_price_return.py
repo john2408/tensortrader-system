@@ -13,11 +13,13 @@ from statsmodels.tsa.stattools import pacf
 from tensortrader.transformations.denoising import *
 from tensortrader.tasks.task_utils import create_logging
 from tensortrader.constants import *
+from tensortrader.utils.utils import utc_to_local
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 from pathlib import Path
 import yaml
+import pytz
 
 def main():
 
@@ -30,9 +32,12 @@ def main():
     thresh = CONF['thresh']
     # Input and Output Paths
     input_data_path = CONF['input_data_path']
+    db_name = CONF['db_name']
     output_data_path = CONF['output_data_path']
     #Denoising method 
     denoising_method = CONF['denoising_method']
+    # Time zone
+    time_zone = CONF['time_zone']
     #Wavelet Function
     wavelet = CONF['wavelet']
     # Candle Stick Upsample Range (in minutes)
@@ -83,8 +88,12 @@ def main():
     # -----------------------------
     # Data Import
     # -----------------------------
-    df = pd.read_parquet(os.path.join(input_data_path, 
-                        'Tensor_Portfolio.parquet'))
+    db_loc = os.path.join(input_data_path, db_name)
+    try: 
+        logger.info(f"Reading File at loc {db_loc}")
+        df = pd.read_parquet(db_loc)
+    except Exception as e:
+        logger.error(f"Failure at reading file at {db_loc} - {e}")
 
     # -----------------------------
     # Create Denoised dataframe
@@ -93,10 +102,13 @@ def main():
 
     for ticker in SYMBOLS:
 
-        prices_return = df[df['Ticker'] == ticker]['Close_target_return_15m'].values
+        df_ticker = df[df['Ticker'] == ticker].copy()
+        prices_return = df_ticker['Close_target_return_15m'].values
 
         # Get selected subset of data
         prices_return = prices_return[-subset_wavelet_transform:]
+        local_timestamps = df_ticker['timestamp'] \
+                            .iloc[-subset_wavelet_transform:]
 
         # remove High Frequency Noise from Timeseries
         denoiser = denoising(signal = prices_return)
@@ -128,6 +140,7 @@ def main():
         print(lag_analysis)                        
 
         df_temp = pd.DataFrame()
+        df_temp['timestamp'] = local_timestamps
         df_temp['price_returns'] = prices_return
         df_temp['denoised_price_returns'] = denoised_prices_return
         df_temp['ticker'] = ticker
@@ -135,10 +148,25 @@ def main():
 
         dfs.append(df_temp)
         del df_temp
-        
+        del df_ticker
+
+    # -----------------------------
+    # Generate denoised price returns dataframe
+    # -----------------------------
+
+    df_prices = pd.concat(dfs)
     
-    
-    df_prices = pd.concat(dfs, ignore_index = True)
+    local_tz = pytz.timezone(time_zone)
+    df_prices['timestamp'] =  df_prices['timestamp'].apply(lambda x: utc_to_local(x, local_tz)) 
+    df_prices['timestamp_return_ref'] =  df_prices['timestamp'].apply(lambda x: x + timedelta(minutes= 15) ) 
+
+    df_prices = df_prices.filter(['timestamp','timestamp_return_ref', 
+                            'price_returns', 'denoised_price_returns', 
+                            'ticker','pacf_lag']).copy()
+
+    # -----------------------------
+    # Store denoised price returns as parquet
+    # -----------------------------
 
     logger.info("Storing Denoised prices to parquet")
     df_prices.to_parquet(os.path.join(output_data_path, "Tensor_Portfolio_denoised.parquet"))
