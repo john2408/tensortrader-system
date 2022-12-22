@@ -1,22 +1,20 @@
-from pathlib import Path
-from pyexpat import model
-import yaml
-import logging
-from constants import *
-
-
 # How to run:
-# linux: export PYTHONPATH="${PYTHONPATH}:/mnt/d/Tensor/tensortrader-system/tensortrader"
+# linux: export PYTHONPATH="${PYTHONPATH}:/mnt/d/Tensor/tensortrader-system"
 # win: ---
 # cd /tensortrader/tasks/
 # python price_return_calculation.py   
 
-from ETL.ETL_func import *
-from ML.label_methods import *
-from ML.models import *
-from datetime import datetime
-from tasks.task_utils import create_logging
+# Import tensortrader functions
+from tensortrader.ETL.ETL_func import *
+from tensortrader.ML.label_methods import *
+from tensortrader.ML.models import *
+from tensortrader.tasks.task_utils import create_logging
+from tensortrader.constants import *
 
+from datetime import datetime
+from pathlib import Path
+import yaml
+import logging
 
 def main():
 
@@ -62,7 +60,7 @@ def main():
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M") 
 
     price_return_dir = os.path.join( Path(os.getcwd()).parents[0].parents[0],
-                         'price_return_log',
+                         'logs/price_return_logs',
                          f"Price_{timestamp}_{run_name}")
 
     if not os.path.exists(price_return_dir):

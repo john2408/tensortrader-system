@@ -11,14 +11,13 @@ from constants import *
 # cd /tensortrader/tasks/
 # python backtesting_tasks.py   
 
-from ETL.ETL_func import *
-from ML.label_methods import *
-from ML.models import *
-from Features.feature_generation import FeatureEngineer
-from Backtesting.backtester import Backtester
-
+from tensortrader.ETL.ETL_func import *
+from tensortrader.ML.label_methods import *
+from tensortrader.ML.models import *
+from tensortrader.Features.feature_generation import FeatureEngineer
+from tensortrader.Backtesting.backtester import Backtester
 from datetime import datetime
-from tasks.task_utils import create_logging
+from tensortrader.tasks.task_utils import create_logging
 
 
 def main(symbol):
@@ -106,7 +105,7 @@ def main(symbol):
 
 
     backtesting_folder = os.path.join( Path(os.getcwd()).parents[0].parents[0],
-                         'backtests',
+                         'logs/backtests',
                          f"Backtest_{current_date}_{symbol}_{run_name}")
 
     if not os.path.exists(backtesting_folder):

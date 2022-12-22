@@ -1,10 +1,11 @@
-from ETL.ETL_func import *
 from binance import Client
 import logging
 from datetime import datetime
-from constants import *
 
-# export PYTHONPATH="${PYTHONPATH}:/mnt/d/Tensor/tensortrader-system/tensortrader"
+from tensortrader.ETL.ETL_func import *
+from tensortrader.constants import *
+
+# export PYTHONPATH="${PYTHONPATH}:/mnt/d/Tensor/tensortrader-system"
 # Logging Config
 current_date = datetime.now().strftime("%Y-%m-%d-%H-%M")
 LOG_FILENAME = os.path.join( Path(os.getcwd()).parents[0].parents[0], 'logs',  f"{current_date}_Daily_candles_update.log")
