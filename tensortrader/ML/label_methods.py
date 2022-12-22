@@ -134,7 +134,8 @@ class ReturnSignal():
           timestamp_col: str,
           variable: str, 
           span_volatility: int,
-          outlier_cutoff: float = 0.01) -> None:
+          outlier_cutoff: float, 
+          return_type: str) -> None:
     """Contructor. 
 
     Args:
@@ -156,6 +157,7 @@ class ReturnSignal():
     self.variable = variable
     self.span_volatility = span_volatility
     self.outlier_cutoff = outlier_cutoff
+    self.return_type = return_type
 
 
   def run(self) -> pd.DataFrame:
@@ -172,11 +174,13 @@ class ReturnSignal():
         print("Calculating returns for ticker", ticker)
 
         _df = self.data[self.data['Ticker'] == ticker].copy()
-        _df = self.calculate_returns(_df, self.variable, 
+        _df = self.calculate_returns(_df, 
+                                    self.variable, 
                                     self.return_lag, 
                                     self.timestamp_col, 
                                     self.target_col_name,
-                                    self.outlier_cutoff)
+                                    self.outlier_cutoff, 
+                                    self.return_type)
 
         _df =  _df.assign(threshold = self.calculate_volatility(_df))
 
@@ -285,7 +289,7 @@ class ReturnSignal():
 
     return data
 
-  def calculae_return_signal():
+  def calculate_return_signal():
     pass
 
 

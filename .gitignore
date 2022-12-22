@@ -5,6 +5,8 @@ __pycache__/
 config.json
 logs/
 backtests/
+price_return/
+price_return_log/
 
 # C extensions
 *.so

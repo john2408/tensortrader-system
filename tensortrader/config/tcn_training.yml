@@ -1,0 +1,11 @@
+# -----------------------------
+# 4. Neural Network Model 
+# -----------------------------
+n_features: 1
+batch_size : 1
+epochs : 200
+verbose : 0
+test_size : 0.2 # as a percentage 0.2 -> 20%
+seed : 123
+dilations : [2, 4, 8, 16]
+kernel_size : 3

@@ -1,0 +1,60 @@
+# -----------------------------
+# Initial Parameters
+# -----------------------------
+n_days : 65 
+years_filter : [2022]
+input_folder_db : "/mnt/c/Tensor/Database/Cryptos/"
+output_folder_db: "/mnt/c/Tensor/Database/Cryptos/PRICE_RETURNS"
+imbalance_classes_mode : "class_weights" #  class_weights or oversampling
+
+
+# Possible Combinations:
+# (1) label_mode: return (return_type = return p(t+1)/p(t)) & target_type: regression
+# (2) label_mode: log_return (return_type = log(p(t+1)/p(t)) ) & target_type: regression
+# (3) label_mode: Triple Barrier Method & target_type: classification
+label_mode : 'return' 
+return_type : 'simple' # simple / log
+target_type : 'regression' 
+return_lag : 1 # for return reference calculation 
+
+
+# -----------------------------
+# Resampling Paramters
+# -----------------------------
+use_resampling : True
+resampling : '15Min'
+
+# -----------------------------
+# Return Signals Parameters
+# -----------------------------
+return_lag : 1
+long_short : [3,1]
+timestamp_col : 'Date'
+variable : 'Close' 
+
+# -----------------------------
+# Triple Barrier Parameters
+# -----------------------------
+
+# Profit-Stop Loss ratio
+ptsl : [3,1] # example [3,1] Target will be 4 times the std, and stop 1 time
+pt : 1 # Position Type 1: Long, -1: Short (NOT WORKING -1 for SHORT)
+v_barrier_minutes : 10
+
+
+# For parallel labels computing
+n_jobs : -2
+max_nbytes : '0.8M'
+parallel_calculation : False
+
+
+
+# -----------------------------
+# Volatility Parameters
+# -----------------------------
+
+# number of candles to considered for volatility
+span_volatility : 30
+volatility_freq : 1 # In minutes/ or candle bar frequency
+outlier_cutoff : 0.01
+
