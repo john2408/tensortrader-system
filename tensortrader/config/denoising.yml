@@ -1,13 +1,13 @@
 # -----------------------------
 # 1. Data Input
 # -----------------------------
-tickers : ['ADAUSDT', 'BNBBTC', 'BNBUSDT', 'BTCUSDT', 'DOGEUSDT', 'EOSUSDT',
-       'ETCUSDT', 'ETHUSDT', 'IOTAUSDT', 'LTCUSDT', 'MKRUSDT', 'TRXUSDT',
-       'XLMUSDT', 'XMRBTC']
+input_data_path : '/mnt/c/Tensor/Database/PRICE_RETURNS'
+output_data_path : '/mnt/c/Tensor/Database/DENOISED_RETURNS'
 
 # -----------------------------
 # 2. Wavelet Denoising
 # -----------------------------
+denoising_method  : 'wavelet'
 
 # Threshold for Wavelet Denoising (from 0.0 to 1.0)
 thresh : 0.1 

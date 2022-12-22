@@ -9,7 +9,7 @@ import dateutil
 # https://towardsdatascience.com/how-to-fix-modulenotfounderror-and-importerror-248ce5b69b1c
 # export PYTHONPATH="${PYTHONPATH}:/path/to/your/project/"
 # export PYTHONPATH="${PYTHONPATH}:/home/john/Projects/Tensor/tensortrader/tensortrader
-from utils.utils import *
+from tensortrader.utils.utils import *
 
 
 from binance import Client, ThreadedWebsocketManager, ThreadedDepthCacheManager

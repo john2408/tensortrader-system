@@ -5,7 +5,7 @@ from joblib import Parallel, delayed
 import os
 import pandas_ta as ta
 
-from utils.utils import *
+from tensortrader.utils.utils import *
 
 
 class TechnicalSignal():

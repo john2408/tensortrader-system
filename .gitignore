@@ -4,10 +4,6 @@ __pycache__/
 *$py.class
 config.json
 logs/
-backtests/
-price_return/
-price_return_log/
-
 # C extensions
 *.so
 
