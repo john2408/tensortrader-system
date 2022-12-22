@@ -5,12 +5,10 @@ input_data_path : '/mnt/c/Tensor/Database/PRICE_RETURNS'
 db_name : 'Tensor_Portfolio_simple_return.parquet'
 output_data_path : '/mnt/c/Tensor/Database/DENOISED_RETURNS'
 
-
 # -----------------------------
 # 2. Wavelet Denoising
 # -----------------------------
 denoising_method  : 'wavelet'
-time_zone : 'Europe/Berlin'
 
 # Threshold for Wavelet Denoising (from 0.0 to 1.0)
 thresh : 0.1 
@@ -31,6 +29,9 @@ pacf_days_subset : 60
 # Number of hours to consider for 
 # lag pattern lookup
 nn_hours_pattern_lookup : 24
+
+# Local timezone
+time_zone : 'Europe/Berlin'
 
 # -----------------------------
 # 3. Partial Autocorrelation

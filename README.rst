@@ -25,6 +25,10 @@ To start run file tensortrader/task/bactesting_task.py. Change configuration on 
 * Free software: MIT license
 * Documentation: https://tensortrader.readthedocs.io.
 
+Tensor ML Return Signal Training - Strategy
+--------
+.. image:: img/Financial_Forecasting_Model.PNG
+
 
 Tensor Trading System
 --------

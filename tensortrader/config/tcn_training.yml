@@ -1,3 +1,40 @@
+
+# -----------------------------
+# 1. Data Input
+# -----------------------------
+input_data_path_price_return : '/mnt/c/Tensor/Database/PRICE_RETURNS'
+db_name_price_return : 'Tensor_Portfolio_simple_return.parquet'
+
+input_data_path_denoised_return : '/mnt/c/Tensor/Database/DENOISED_RETURNS'
+db_name_denoised_return : 'Tensor_Portfolio_denoised.parquet'
+
+output_data_path : '/mnt/c/Tensor/Database/TRADING_SIGNALS'
+model_loc : '/mnt/c/Tensor/Database/ML_MODELS/TCN'
+
+# -----------------------------
+# 2. Wavelet Denoising
+# -----------------------------
+
+denoising_method  : 'wavelet'
+
+# Threshold for Wavelet Denoising (from 0.0 to 1.0)
+thresh : 0.1 
+
+# Wavelet Transformation Function
+# 'sym2', 'sym3', 'sym4', 'sym5', 'sym6', 
+# 'sym7', 'sym8', 'sym9', 'sym10', 'sym11',
+# 'sym12', 'sym13', 'sym14', 'sym15', 'sym16', 
+# 'sym17', 'sym18', 'sym19', 'sym20'
+wavelet : "sym4"
+
+# Candle Stick Upsample Range (in minutes)
+minute_sampling : 15
+
+# lookback subset to PACF pattern search
+pacf_days_subset : 60
+
+
+
 # -----------------------------
 # 4. Neural Network Model 
 # -----------------------------
