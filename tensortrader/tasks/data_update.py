@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 from constants import *
 
-# export PYTHONPATH="${PYTHONPATH}:/mnt/d/Tensor/tensortrader/tensortrader"
+# export PYTHONPATH="${PYTHONPATH}:/mnt/d/Tensor/tensortrader-system/tensortrader"
 # Logging Config
 current_date = datetime.now().strftime("%Y-%m-%d-%H-%M")
 LOG_FILENAME = os.path.join( Path(os.getcwd()).parents[0].parents[0], 'logs',  f"{current_date}_Daily_candles_update.log")
