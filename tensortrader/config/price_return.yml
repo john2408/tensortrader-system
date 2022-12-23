@@ -8,6 +8,7 @@ output_folder_db: "/mnt/c/Tensor/Database/PRICE_RETURNS"
 imbalance_classes_mode : "class_weights" #  class_weights or oversampling
 
 
+
 # Possible Combinations:
 # (1) label_mode: return (return_type = return p(t+1)/p(t)) & target_type: regression
 # (2) label_mode: log_return (return_type = log(p(t+1)/p(t)) ) & target_type: regression
@@ -19,7 +20,7 @@ return_lag : 1 # for return reference calculation
 
 
 # -----------------------------
-# Resampling Paramters
+# Resampling Parameters
 # -----------------------------
 use_resampling : True
 resampling : '15Min'

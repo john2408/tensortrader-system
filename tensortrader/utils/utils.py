@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-
+import os
 import pytz
 import datetime
 
@@ -53,3 +53,27 @@ def utc_to_local(utc_dt : datetime.datetime, local_tz: pytz.tzfile ) -> datetime
     """
     local_dt = utc_dt.replace(tzinfo=pytz.utc).astimezone(local_tz)
     return local_dt
+
+def get_latest_available_folder(folder_loc :str,
+                                key_word : str) -> str:
+    """Get most recent folder given a timestamp
+
+    Args:
+        folder_loc (str): folder location
+        key_word (str): keyword
+
+    Returns:
+        str: most recent folder location
+    """
+
+    folders = [x for x in os.listdir(folder_loc) if key_word in x]
+
+    df_tmp = pd.DataFrame()
+    df_tmp['folders'] = folders
+    df_tmp['timestamp'] = pd.Series(folders).apply(lambda x: x[:16])
+    df_tmp['timestamp'] = pd.to_datetime( df_tmp['timestamp'], format = "%Y-%m-%d-%H-%M")
+
+    # Sort where first row is most recent folder
+    df_tmp.sort_values(by = ['timestamp'], ascending = False, inplace = True)
+
+    return os.path.join(folder_loc, df_tmp['folders'].values[0])

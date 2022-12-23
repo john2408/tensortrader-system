@@ -11,6 +11,7 @@ warnings.filterwarnings("ignore")
 
 from tensortrader.constants import *
 from tensortrader.tasks.task_utils import create_logging
+from tensortrader.utils.utils import get_latest_available_folder
 from tensortrader.transformations.denoising import *
 
 import datetime
@@ -37,20 +38,11 @@ def main():
     input_data_path_price_return = CONF['input_data_path_price_return']
     db_name_price_return = CONF['db_name_price_return']
     
-    # Input data Loc - historical denoised return prices
-    input_data_path_denoised_return = CONF['input_data_path_denoised_return']
-    db_name_denoised_return = CONF['db_name_denoised_return']
 
     # Model Location
-    model_loc = CONF['model_loc']
-
-    # Temporal Convolutatin Networks Params
-    n_features = CONF['n_features']
-
-    # Denoising Method Parameters
-    denoising_method = CONF['denoising_method']
-    thresh = CONF['thresh']
-    wavelet = CONF['wavelet']
+    model_storage_loc = CONF['model_storage_loc']
+    key_word = CONF['key_word']
+    
 
     # -----------------------------
     # Logging Config
@@ -75,10 +67,26 @@ def main():
     print("Logging data at ", LOG_FILENAME)
 
     logger = create_logging(LOG_FILENAME)
+    
 
     # -----------------------------
     # Data Load
     # -----------------------------
+        
+    logger.info("Getting most recent trained ML Model")
+    model_latest_loc = get_latest_available_folder(folder_loc = model_storage_loc,
+                                                  key_word = key_word)
+
+    print(f"Most Recent trained ML Model available at {model_latest_loc}")
+    logger.info(f"Most Recent trained ML Model available at {model_latest_loc}" )
+
+    # Temporal Convolutatin Networks Params
+    n_features = CONF['n_features']
+
+    # Denoising Method Parameters
+    denoising_method = CONF['denoising_method']
+    thresh = CONF['thresh']
+    wavelet = CONF['wavelet']
 
     # Latest Prices returns 
     try:
@@ -89,14 +97,16 @@ def main():
         print(f"Erorr {e}")
         logger.info(f"{e}")
 
-    # Denoised prices
+    # PACF Lags per ticker
     try:
         logger.info("Reading latest denoised prices and PACF")
-        path_loc = os.path.join(input_data_path_denoised_return, db_name_denoised_return)
-        df_prices = pd.read_parquet(path_loc)
+        filepath = os.path.join(model_latest_loc, f'PACF_lags.pkl')
+        ticker_pacf_lags = joblib.load(filepath)
     except Exception as e:
         print(f"Erorr {e}")
         logger.info(f"{e}")
+
+        
 
     # -----------------------------
     # Generate Signal
@@ -108,7 +118,7 @@ def main():
         
         try:
             # load NN Model
-            filepath = os.path.join(model_loc, 'models', f'TCN_Model_{ticker}')
+            filepath = os.path.join(model_latest_loc, f'TCN_Model_{ticker}')
             print("Reading model at loc", filepath)
             model = ks.models.load_model(filepath)
         except Exception as e:
@@ -117,7 +127,7 @@ def main():
         
         try:
             # load Scaler
-            filepath = os.path.join(model_loc, 'scalers', f'Scaler_{ticker}.pkl')
+            filepath = os.path.join(model_latest_loc, f'Scaler_{ticker}.pkl')
             print("Reading model at loc", filepath)
             scaler = joblib.load(filepath)
         except Exception as e:
@@ -143,7 +153,7 @@ def main():
 
         # PACF Lag
         # Step 0. From Model Training
-        pacf_lag = df_prices[df_prices['ticker'] == ticker]['pacf_lag'].values[0]
+        pacf_lag = ticker_pacf_lags[ticker]
 
         # (4) Get Signal Prediction
         # Get input data for model

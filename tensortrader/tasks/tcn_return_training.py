@@ -104,6 +104,7 @@ def main():
 
     #SYMBOLS = ['BTCUSDT']
     logger.info("Training Temporal Convolutional Networks")
+    ticker_pacf_lags = {}
 
     for ticker in SYMBOLS:
         
@@ -116,6 +117,9 @@ def main():
         ts = df_temp['denoised_price_returns'].values.reshape(-1, 1)
             
         lag_length = df_temp['pacf_lag'].values[0]
+
+        ticker_pacf_lags[ticker] = lag_length
+
         logger.info(f"\tLag length PACF :  {lag_length}")
 
         logger.info(f"\tTraining TCN Model")
@@ -182,6 +186,14 @@ def main():
         logger.info("\tStoring Standard Scaler")
         filepath = os.path.join(model_dir, f'Scaler_{ticker}.pkl')
         joblib.dump(ticker_tcn_model.scaler, filepath) 
+
+    # ------------------------------------
+    # Storing Dict with PACF Lags
+    # -------------------------------------
+    logger.info("\tStoring PACF Lags")  
+    filepath = os.path.join(model_dir, f'PACF_lags.pkl')
+    joblib.dump(ticker_pacf_lags, filepath) 
+
 
     # ------------------------------------
     # Training Results
