@@ -35,6 +35,8 @@ def main():
     minute_sampling = CONF['minute_sampling']
     # lookback subset to PACF pattern search
     pacf_days_subset = CONF['pacf_days_subset']
+    # Minute sampling 
+    minute_sampling = CONF['minute_sampling']
     
     # Length of Subset Timeseries
     subset_wavelet_transform = int(24*(60/minute_sampling)*pacf_days_subset) #60*hours # Number 
@@ -122,6 +124,7 @@ def main():
     # -----------------------------
     df_signals = pd.DataFrame()
     df_signals['ticker'] = SYMBOLS
+    df_signals['Signal'] = 'NEUTRAL'
     
     for ticker in df_signals['ticker'].unique():
 
@@ -192,10 +195,7 @@ def main():
         # (r_nth(t+n) +1)**(n) = (P(t+n)/P(t)) - 1)
         # ((r_nth(t+n) +1)**(n)) + 1 = (P(t+n)/P(t)) 
         # P(t+n) = (((r_nth(t+n) +1)**(n)) + 1 )/ P(t) 
-
-        
-        
-        df_signals['Signal'] = 'NEUTRAL'
+       
         
         if return_prediction > 0:
             df_signals['Signal'] = np.where( df_signals['ticker'] == ticker, "LONG", df_signals['Signal'])
@@ -216,10 +216,12 @@ def main():
     logger.info("\tStoring Signals")
     filepath = os.path.join(output_data_trading_signals, f'Trading_Signals.parquet') 
     
-    
-    df_signals['timestamp_signal_ref'] =  df_signals['timestamp_local'].apply(lambda x: x + timedelta(minutes= 15) ) 
+    # Since from label_methods.calculate_returns() the values are shifted one position in the past, when generating
+    # the signals the reference forecast value will be 2 position in the future
+    df_signals['timestamp_signal_ref'] =  df_signals['timestamp_local'].apply(lambda x: x + timedelta(minutes = minute_sampling*2) ) 
     
     df_signals['creation_time'] = timestamp
+    df_signals.drop(columns = ['timestamp_local'], inplace = True)
     df_signals.to_parquet(filepath)
     
 if __name__ == "__main__":
