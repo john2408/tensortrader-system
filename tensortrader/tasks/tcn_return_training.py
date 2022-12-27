@@ -23,13 +23,16 @@ from tensortrader.tasks.task_utils import create_logging
 from tensortrader.transformations.denoising import *
 from tensortrader.ML.dl_models import tcn_model
 
+#export PYTHONPATH="${PYTHONPATH}:/mnt/d/Tensor/tensortrader-system"
 
 def main():
 
     # -----------------------------
     # Get config values
     # -----------------------------
-    CONF = yaml.safe_load(Path('../config/tcn_training.yml').read_text())
+    path = "/mnt/d/Tensor/tensortrader-system/tensortrader/config/tcn_training.yml"
+    #path = "../config/tcn_training.yml"
+    CONF = yaml.safe_load(Path(path).read_text())
 
     # Input data Loc - historical denoised return prices
     input_data_path_denoised_return = CONF['input_data_path_denoised_return']
@@ -55,8 +58,9 @@ def main():
     # -----------------------------
     # Logging Config
     # -----------------------------
-    training_log_dir = os.path.join( Path(os.getcwd()).parents[0].parents[0],
-                         logs_folder)
+    #path_logs = Path(os.getcwd()).parents[0].parents[0]
+    path_logs = "/mnt/d/Tensor/tensortrader-system/logs/"
+    training_log_dir = os.path.join(logs_folder)
   
     print("Storing Training logs at", training_log_dir)
 
@@ -114,8 +118,15 @@ def main():
         logger.info(f"\tGetting Denoised Return price data for ticker: {ticker}")
         df_temp = df_prices[df_prices['ticker'] == ticker].copy()
 
+        # Input Denoised timeseries of price returns
         ts = df_temp['denoised_price_returns'].values.reshape(-1, 1)
-            
+
+        # Input timestamps
+        timestamps = df_temp['timestamp']
+
+        print("Length ts:", len(ts))
+        print("Length timestamps:", len(timestamps))    
+
         lag_length = df_temp['pacf_lag'].values[0]
 
         ticker_pacf_lags[ticker] = lag_length
@@ -124,7 +135,8 @@ def main():
 
         logger.info(f"\tTraining TCN Model")
         ticker_tcn_model = tcn_model( 
-                                ts_data  = ts, 
+                                ts_data = ts, 
+                                timestamps = timestamps,
                                 test_size = test_size, 
                                 lag_length = lag_length, 
                                 n_features = n_features,
@@ -135,25 +147,33 @@ def main():
                                 patience = patience,
                                 monitor = monitor,
                                 verbose  = verbose)
-
+               
         # Fit TCN Model
         ticker_tcn_model.fit()
 
         # Train Test Batches
-        X_train, Y_train, X_test, Y_test = ticker_tcn_model.test_train_batches          
+        X_train, Y_train, X_test, Y_test = ticker_tcn_model.test_train_batches 
+
+        # Train/Test Timestamps
+        timestamps_train, timestamps_test = ticker_tcn_model.train_test_timestamps        
 
         forecast_train = ticker_tcn_model.scaler.inverse_transform(ticker_tcn_model.model.predict(X_train)).reshape(1,-1)[0]
         forecast_test = ticker_tcn_model.scaler.inverse_transform(ticker_tcn_model.model.predict(X_test)).reshape(1,-1)[0]
 
         original_train = ticker_tcn_model.scaler.inverse_transform(Y_train).reshape(1,-1)[0]
         original_test = ticker_tcn_model.scaler.inverse_transform(Y_test).reshape(1,-1)[0]
+        
+        print("len timestamps_test,", len(timestamps_test))
+        print("len original test", len(original_test))
 
         df_train = pd.DataFrame()
+        df_train['timestamp'] = timestamps_train 
         df_train['forecast_train'] = forecast_train 
         df_train['original_train'] = original_train 
         df_train['ticker'] = ticker
 
         df_test = pd.DataFrame()
+        df_test['timestamp'] = timestamps_test 
         df_test['forecast_test'] = forecast_test 
         df_test['original_test'] = original_test 
         df_test['ticker'] = ticker
@@ -205,6 +225,10 @@ def main():
     logger.info("\tTraining Results")
     filepath = os.path.join(model_dir, f'Metric_Results.csv') 
     df_metric_data.to_csv(filepath)
+    
+    logger.info("\tTest Results")
+    filepath = os.path.join(model_dir, f'Test_Results.parquet') 
+    df_test_data.to_parquet(filepath)
 
     print(df_metric_data)
 
@@ -218,22 +242,19 @@ def main():
 
     for ticker in df_metric_data['ticker'].unique():
 
-        original_test = df_test_data[df_test_data['ticker'] == ticker]['original_test'].values
-        forecast_test = df_test_data[df_test_data['ticker'] == ticker]['forecast_test'].values
-
-        # plt.plot(original_test)
-        # plt.plot(forecast_test)
-        # plt.title(f'1-step ahead Price Return Forecast {ticker}')
-        # plt.legend(['actual', 'predicted_test'])
-        # plt.show()
-
-        fig, ax = plt.subplots(figsize=(12,4))
+        df_tmp = df_test_data[df_test_data['ticker'] == ticker].copy()
+        timestamps = df_tmp['timestamp']
+        df_tmp.set_index('timestamp', inplace = True)
+        original_test = df_tmp['original_test']
+        forecast_test = df_tmp['forecast_test']
+        
+        fig, ax = plt.subplots(figsize=(12,5))
         ax.plot(original_test, color="b", alpha=0.99, label='original')
         ax.plot(forecast_test, color='r', label='forecast')
         ax.legend()
+        ax.tick_params(axis = 'x', rotation = 85)
         ax.set_title(f'1-step ahead Price Return Forecast {ticker}', fontsize=18)
         ax.set_ylabel('Price Return', fontsize=16)
-        ax.set_xlabel('Sample No', fontsize=16)
 
         # save figure to PDF
         pp.savefig(fig)

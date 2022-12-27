@@ -22,6 +22,7 @@ class tcn_model():
 
     def __init__(self, 
                     ts_data : np.ndarray, 
+                    timestamps : pd.Series,
                     test_size : float, 
                     lag_length : int, 
                     n_features : int,
@@ -33,6 +34,7 @@ class tcn_model():
                     monitor : str = 'val_loss',
                     verbose : int = 0) -> None:
         self.ts_data = ts_data
+        self.timestamps = timestamps
         self.test_size = test_size
         self.lag_length = lag_length
         self.n_features = n_features
@@ -48,6 +50,7 @@ class tcn_model():
         self.scaler = None
         self.model = None
         self.test_train_batches = []
+        self.train_test_timestamps = []
 
 
 
@@ -69,8 +72,17 @@ class tcn_model():
         test_units = int(self.ts_len * self.test_size)
         test_start = int(self.ts_len - test_units)
 
-        ts_train = ts_norm[:test_start]
-        ts_test = ts_norm[test_start:]
+        # Getting Train/Test Tensor np.array
+        ts_train, ts_test = ts_norm[:test_start], ts_norm[test_start:]
+        
+        # Getting timestamps for train and test dataframes taking into account the lag_length - see: get_test_train_batches()
+        self.train_test_timestamps = self.timestamps[self.lag_length:test_start], self.timestamps[test_start + self.lag_length:]
+        
+        print("ts_train: ", len(ts_train))
+        print("ts_test: ", len(ts_test))
+        
+        print("Timestamps train: ", len(self.train_test_timestamps[0]))
+        print("Timestamps test: ", len(self.train_test_timestamps[1]))
 
         return ts_train, ts_test
 
