@@ -58,13 +58,10 @@ def main():
     # -----------------------------
     # Logging Config
     # -----------------------------
-    #path_logs = Path(os.getcwd()).parents[0].parents[0]
-    path_logs = "/mnt/d/Tensor/tensortrader-system/logs/"
-    training_log_dir = os.path.join(logs_folder)
   
-    print("Storing Training logs at", training_log_dir)
+    print("Storing Training logs at", logs_folder)
 
-    LOG_FILENAME = os.path.join( training_log_dir,
+    LOG_FILENAME = os.path.join( logs_folder,
                                 f"{timestamp}_Training_ML_return.log")
 
     print("Logging data at ", LOG_FILENAME)

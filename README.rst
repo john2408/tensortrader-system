@@ -37,8 +37,22 @@ Tensor Trading System
 To Do's
 --------
 
+**Base Architechture**
 * Create Trading Execution class
 * Create Trading Performance Tracking
+
+
+**Model Improvement**
+* Hyperparameter Optimization for TCN Model
+* Test GCN Model 
+* Try out log(p(t)/p(t-1)) as return metric
+* Automate in the Cloud
+
+**Front End**
+* Show Training Results
+* Show last returns denoising values
+* Show Traiding Performance
+
 
 Credits
 -------

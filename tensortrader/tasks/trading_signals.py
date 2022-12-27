@@ -218,18 +218,24 @@ def main():
     # Since from label_methods.calculate_returns() the values are shifted one position in the past, when generating
     # the signals the reference forecast value will be 2 position in the future
     df_signals['timestamp_signal_ref'] =  df_signals['timestamp_local'].apply(lambda x: x + timedelta(minutes = minute_sampling*2) ) 
-    df_signals['creation_time'] = timestamp
+    df_signals['creation_time'] = datetime.datetime.now()
     df_signals.drop(columns = ['timestamp_local'], inplace = True)
     
     
     logger.info("\tStoring Signals")
     filepath = os.path.join(output_data_trading_signals, f'Trading_Signals.parquet') 
     
-    df_signals_old = pd.read_parquet(filepath)
-    df_signals = pd.concat([df_signals, df_signals_old]) 
+    if not os.path.exists(filepath):
+        df_signals['position'] = df_signals['Signal'].map({'LONG':1, 'SHORT':-1, 'NEUTRAL' : 0})
+        df_signals.drop_duplicates().to_parquet(filepath)
+    else:
+        df_signals_old = pd.read_parquet(filepath)
+        df_signals = pd.concat([df_signals, df_signals_old]) 
+        df_signals['position'] = df_signals['Signal'].map({'LONG':1, 'SHORT':-1, 'NEUTRAL' : 0})
+         # Overwrite values
+        df_signals.drop_duplicates().to_parquet(filepath)  
     
-    # Overwrite values
-    df_signals.to_parquet(filepath)
+   
     
 if __name__ == "__main__":
     print("Generating Trading Signal")
