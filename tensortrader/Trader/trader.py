@@ -120,9 +120,23 @@ class BinanceTrader():
             
             return True
         
-        if (self.trade_time - datetime.now()) >= timedelta(minutes = self.max_trade_time):
+        # (2) Max Holding Time
+        info = "Trading Start Time was : {} ".format(self.trade_time)
+        print(info)
+        self.logger.info(info)
+        
+        current_trading_time = datetime.utcnow() - pd.to_datetime(self.trade_time)
+        max_trading_time = timedelta(minutes = self.max_trade_time)
+        
+        info = "Current trading holding time {}".format(current_trading_time)
+        print(info)        
+        self.logger.info(info)
+        
+        if current_trading_time >= max_trading_time:
             
-            self.logger.info("More than max time time allowed {}. Closing Trade".format(self.max_trade_time))
+            info = "More than max time time allowed {}. Closing Trade".format(self.max_trade_time)
+            self.logger.info(info)
+            print(info)
             
             if self.position == 1:
                 
