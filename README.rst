@@ -34,31 +34,11 @@ Tensor Trading System
 --------
 .. image:: img/Tensor_Trading_System.PNG
 
-Features
+To Do's
 --------
 
-* Adjust all yml config files (done)
-* Create logging (done)
-* Export Charts to PDF File (done)
-* Model Storage (done)
-* Run multiple combinations of models (done) 
-* Adjust resampling for chandle stick --> 10 min, 5 min. (done)
-* Create Strategy based on Returns --> then also create labels from it (done)
-* Create XGBoost Regressor for Return Forecasting--> New Strategy (done)
-* Test models with resampling (5min, 10 min) (done)
-* Create functionality for Backtesting for (done): 
-*   (1) label_mode: return & target_type: regression
-*   (2) label_mode: return & target_type: classification
-*   (3) label_mode: TBM & target_type: classification
-* Adjust Information stored in logs (done)
-    
-* Create Automated Backend - Tensor Trading System - 15min Trader (in progress)
-
-* Create new full test for all coins with all functionallities
-        
-* Technical Strategies Pool
-* Adjust Metalables Strategies 
-* --> LSTM --> GNN = CTN + GN 
+* Create Trading Execution class
+* Create Trading Performance Tracking
 
 Credits
 -------
