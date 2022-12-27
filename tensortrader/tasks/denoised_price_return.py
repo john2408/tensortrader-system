@@ -107,7 +107,7 @@ def main():
 
         # Get selected subset of data
         prices_return = prices_return[-subset_wavelet_transform:]
-        local_timestamps = df_ticker['timestamp'] \
+        local_timestamps = df_ticker['timestamp_local'] \
                             .iloc[-subset_wavelet_transform:]
 
         # remove High Frequency Noise from Timeseries
@@ -140,7 +140,7 @@ def main():
         print(lag_analysis)                        
 
         df_temp = pd.DataFrame()
-        df_temp['timestamp'] = local_timestamps
+        df_temp['timestamp_local'] = local_timestamps
         df_temp['price_returns'] = prices_return
         df_temp['denoised_price_returns'] = denoised_prices_return
         df_temp['ticker'] = ticker
@@ -156,11 +156,11 @@ def main():
 
     df_prices = pd.concat(dfs)
     
-    local_tz = pytz.timezone(time_zone)
-    df_prices['timestamp'] =  df_prices['timestamp'].apply(lambda x: utc_to_local(x, local_tz)) 
-    df_prices['timestamp_return_ref'] =  df_prices['timestamp'].apply(lambda x: x + timedelta(minutes= 15) ) 
+    # local_tz = pytz.timezone(time_zone)
+    # df_prices['timestamp'] =  df_prices['timestamp'].apply(lambda x: utc_to_local(x, local_tz)) 
+    df_prices['timestamp_return_ref'] =  df_prices['timestamp_local'].apply(lambda x: x + timedelta(minutes= minute_sampling) ) 
 
-    df_prices = df_prices.filter(['timestamp','timestamp_return_ref', 
+    df_prices = df_prices.filter(['timestamp_local','timestamp_return_ref', 
                             'price_returns', 'denoised_price_returns', 
                             'ticker','pacf_lag']).copy()
 

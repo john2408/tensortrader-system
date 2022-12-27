@@ -44,6 +44,7 @@ def main():
     resampling = CONF.get('resampling')
     output_folder_db = CONF.get('output_folder_db') 
     imbalance_classes_mode = CONF.get('imbalance_classes_mode')
+    time_zone = CONF.get('time_zone')
     
     # number of candles to considered for volatility
     span_volatility = CONF.get('span_volatility') 
@@ -214,6 +215,10 @@ def main():
         print(data.groupby(['Ticker'])['label'].value_counts())
     
     logger.info(f"Price Return data generated")
+    
+    # Create timestamp with local timezone
+    local_tz = pytz.timezone(time_zone)
+    data['timestamp_local'] = data['timestamp'].apply(lambda x: utc_to_local(x, local_tz)) 
 
     data.to_parquet(f"{output_folder_db}/Tensor_Portfolio_{return_type}_return.parquet")
     

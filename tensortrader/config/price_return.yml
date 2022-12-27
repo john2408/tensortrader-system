@@ -3,6 +3,7 @@
 # -----------------------------
 n_days : 65 
 years_filter : [2022]
+time_zone : 'Europe/Berlin'
 input_folder_db : "/mnt/c/Tensor/Database/Cryptos/"
 output_folder_db: "/mnt/c/Tensor/Database/PRICE_RETURNS"
 imbalance_classes_mode : "class_weights" #  class_weights or oversampling

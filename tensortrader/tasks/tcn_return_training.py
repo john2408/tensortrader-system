@@ -122,7 +122,7 @@ def main():
         ts = df_temp['denoised_price_returns'].values.reshape(-1, 1)
 
         # Input timestamps
-        timestamps = df_temp['timestamp']
+        timestamps = df_temp['timestamp_local']
 
         print("Length ts:", len(ts))
         print("Length timestamps:", len(timestamps))    
@@ -192,9 +192,6 @@ def main():
 
         dfs_metric.append(df_metric)
 
-        del df_test
-        del df_train
-        
         # Store File
         print("Storing Model")
         logger.info("\tStoring Keras Model")
@@ -206,6 +203,10 @@ def main():
         logger.info("\tStoring Standard Scaler")
         filepath = os.path.join(model_dir, f'Scaler_{ticker}.pkl')
         joblib.dump(ticker_tcn_model.scaler, filepath) 
+    
+        del df_test
+        del df_train
+        del ticker_tcn_model
 
     # ------------------------------------
     # Storing Dict with PACF Lags

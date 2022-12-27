@@ -13,8 +13,10 @@ from tensortrader.constants import *
 from tensortrader.tasks.task_utils import create_logging
 from tensortrader.utils.utils import get_latest_available_folder
 from tensortrader.transformations.denoising import *
+from tensortrader.utils.utils import utc_to_local
 
 import datetime
+from datetime import timedelta
 
 # linux: export PYTHONPATH="${PYTHONPATH}:/mnt/d/Tensor/tensortrader-system/"
 # win: ---
@@ -25,12 +27,15 @@ def main():
     # -----------------------------
     # Get config values
     # -----------------------------
-    CONF = yaml.safe_load(Path('../config/tcn_training.yml').read_text())
+    path = '/mnt/d/Tensor/tensortrader-system/tensortrader/config/tcn_training.yml'
+    #path = '../config/tcn_training.yml'
+    CONF = yaml.safe_load(Path(path).read_text())
 
     # Candle Stick Upsample Range (in minutes)
     minute_sampling = CONF['minute_sampling']
     # lookback subset to PACF pattern search
     pacf_days_subset = CONF['pacf_days_subset']
+    
     # Length of Subset Timeseries
     subset_wavelet_transform = int(24*(60/minute_sampling)*pacf_days_subset) #60*hours # Number 
 
@@ -41,6 +46,7 @@ def main():
 
     # Model Location
     model_storage_loc = CONF['model_storage_loc']
+    output_data_trading_signals = CONF['output_data_trading_signals']
     key_word = CONF['key_word']
     
 
@@ -49,8 +55,10 @@ def main():
     # -----------------------------
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M") 
 
-    signal_log_dir = os.path.join( Path(os.getcwd()).parents[0].parents[0],
-                         'logs/trading_signal_logs',
+    #path = Path(os.getcwd()).parents[0].parents[0]
+    path = "/mnt/d/Tensor/tensortrader-system/logs/"
+    signal_log_dir = os.path.join( path, 
+                                  "trading_signal_logs",
                          f"Trading_signal_{timestamp}")
 
     if not os.path.exists(signal_log_dir):
@@ -93,13 +101,14 @@ def main():
         logger.info("Reading latest price returns")
         path_loc = os.path.join(input_data_path_price_return, db_name_price_return)
         df = pd.read_parquet(path_loc)
+        df.sort_values(by = ['ticker', 'Date'], inplace=True)
     except Exception as e:
         print(f"Erorr {e}")
         logger.info(f"{e}")
 
     # PACF Lags per ticker
     try:
-        logger.info("Reading latest denoised prices and PACF")
+        logger.info("Reading PACF lags used in training")
         filepath = os.path.join(model_latest_loc, f'PACF_lags.pkl')
         ticker_pacf_lags = joblib.load(filepath)
     except Exception as e:
@@ -111,7 +120,10 @@ def main():
     # -----------------------------
     # Generate Signal
     # -----------------------------
-    for ticker in SYMBOLS:
+    df_signals = pd.DataFrame()
+    df_signals['ticker'] = SYMBOLS
+    
+    for ticker in df_signals['ticker'].unique():
 
         print("Getting Predicition for ticker", ticker)
         logger.info(f"Getting Predicition for ticker {ticker}")
@@ -138,6 +150,7 @@ def main():
         # Get last prices
         # (1) Database with 15m candle bars
         prices_return = df[df['Ticker'] == ticker]['Close_target_return_15m'].values
+        
 
         # Get selected subset of data
         # (2) Calculate price return
@@ -180,16 +193,35 @@ def main():
         # ((r_nth(t+n) +1)**(n)) + 1 = (P(t+n)/P(t)) 
         # P(t+n) = (((r_nth(t+n) +1)**(n)) + 1 )/ P(t) 
 
+        
+        
+        df_signals['Signal'] = 'NEUTRAL'
+        
         if return_prediction > 0:
+            df_signals['Signal'] = np.where( df_signals['ticker'] == ticker, "LONG", df_signals['Signal'])
             print("Going Long")
         elif return_prediction < 0:
+            df_signals['Signal'] = np.where( df_signals['ticker'] == ticker, "SHORT", df_signals['Signal'])
             print("going Short")
         else:
+            df_signals['Signal'] = np.where( df_signals['ticker'] == ticker, "NEUTRAL", df_signals['Signal'])
             print("Going neutral")
+        
+        last_timestamp = df[df['Ticker'] == ticker]['timestamp_local'].iloc[-1]
+        df_signals['timestamp_local'] = last_timestamp
         
         del model
         del scaler
 
+    logger.info("\tStoring Signals")
+    filepath = os.path.join(output_data_trading_signals, f'Trading_Signals.parquet') 
+    
+    
+    df_signals['timestamp_signal_ref'] =  df_signals['timestamp_local'].apply(lambda x: x + timedelta(minutes= 15) ) 
+    
+    df_signals['creation_time'] = timestamp
+    df_signals.to_parquet(filepath)
+    
 if __name__ == "__main__":
     print("Generating Trading Signal")
     main()

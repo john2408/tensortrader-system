@@ -8,11 +8,12 @@ db_name_denoised_return : 'Tensor_Portfolio_denoised.parquet'
 input_data_path_price_return : '/mnt/c/Tensor/Database/PRICE_RETURNS'
 db_name_price_return : 'Tensor_Portfolio_simple_return.parquet'
 
-output_data_path : '/mnt/c/Tensor/Database/TRADING_SIGNALS'
+output_data_trading_signals: '/mnt/c/Tensor/Database/TRADING_SIGNALS'
 model_storage_loc : '/mnt/c/Tensor/Database/ML_MODELS/TCN'
 key_word : 'TCN_Training'
 
 logs_folder : 'logs/ml_return_training_logs'
+
 
 
 # -----------------------------
