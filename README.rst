@@ -38,20 +38,21 @@ To Do's
 --------
 
 **Base Architechture**
-* Create Trading Execution class
-* Create Trading Performance Tracking
+        * Create Trading Execution class (done)
+        * Create Target/Stop management (done)
+        * Create Trading Performance Tracking Database
 
 
 **Model Improvement**
-* Hyperparameter Optimization for TCN Model
-* Test GCN Model 
-* Try out log(p(t)/p(t-1)) as return metric
-* Automate in the Cloud
+        * Hyperparameter Optimization for TCN Model
+        * Test GCN Model 
+        * Try out log(p(t)/p(t-1)) as return metric
+        * Automate in the Cloud
 
 **Front End**
-* Show Training Results
-* Show last returns denoising values
-* Show Traiding Performance
+        * Show Training Results
+        * Show last returns denoising values
+        * Show Traiding Performance
 
 
 Credits
