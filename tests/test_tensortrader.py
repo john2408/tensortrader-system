@@ -6,7 +6,7 @@ import pytest
 
 from click.testing import CliRunner
 
-from tensortrader import main
+from tensortrader.tasks import TBM_calculation
 from tensortrader import cli
 
 

@@ -1,0 +1,12 @@
+symbol : "BTCUSDT"
+units : 0.01
+max_trades : 10
+signal_loc : '/mnt/c/Tensor/Database/TRADING_SIGNALS/Trading_Signals.parquet'
+config_loc : "/mnt/d/Tensor/tensortrader-system/config.json"
+path_logs : "/mnt/d/Tensor/tensortrader-system/logs/trading_execution_logs"
+model : 'TCN' 
+bar_length : "1m"
+position : 0
+max_trade_time : 30 # minutes
+target_usdt : 50.0 # USDT
+stop_usdt : 30.0 #USDT

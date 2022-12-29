@@ -14,7 +14,6 @@ from tensortrader.constants import *
 from datetime import datetime
 from pathlib import Path
 import yaml
-import logging
 
 def main():
 
