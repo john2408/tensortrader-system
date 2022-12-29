@@ -4,13 +4,11 @@ from binance.client import Client
 from binance import ThreadedWebsocketManager
 from datetime import datetime, timedelta
 import time
-import json
 import logging
 
 import warnings
 warnings.filterwarnings("ignore")
-# TODO
-# Add Target and trailing stop
+
 
 class BinanceTrader():
     
@@ -57,7 +55,7 @@ class BinanceTrader():
         self.stop_price = None
         
         
-    def start_streaming(self):
+    def start_streaming(self) -> None:
         
         self.twm = ThreadedWebsocketManager()
         self.twm.start()
@@ -69,7 +67,11 @@ class BinanceTrader():
                                         symbol = self.symbol, 
                                         interval = self.bar_length)
         
-    def handle_socket_message(self, msg):
+    def handle_socket_message(self, msg) -> None:
+        """Handler method sample
+        Args:
+            msg (dict): message return in api call
+        """
 
         # extract the required items from msg
         event_time  = pd.to_datetime(msg["E"], unit = "ms")
@@ -471,75 +473,3 @@ class BinanceTrader():
                 self.logger.error(e)
                 break
         
-if __name__ == "__main__":
-    
-    
-    import os 
-    from tensortrader.tasks.task_utils import create_logging
-    
-    # -----------------------------
-    # Parameters
-    # -----------------------------
-    symbol = "BTCUSDT"
-    units = 0.01
-    max_trades = 10
-    signal_loc = '/mnt/c/Tensor/Database/TRADING_SIGNALS/Trading_Signals.parquet'
-    config_loc = "/mnt/d/Tensor/tensortrader-system/config.json"
-    path_logs = "/mnt/d/Tensor/tensortrader-system/logs/trading_execution_logs"
-    model = 'TCN' 
-    bar_length = "1m"
-    position = 0
-    max_trade_time = 30 # minutes
-    target_usdt = 50.0 # USDT
-    stop_usdt = 30.0 #USDT
-    
-    # -----------------------------
-    # Logging Config
-    # -----------------------------
-    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M")  
-    trading_dir = os.path.join( path_logs,  f"Trading_Execution_LOG_{symbol}")
-
-    if not os.path.exists(trading_dir):
-        os.mkdir(trading_dir)
-
-    print("Storing Price Return data at", trading_dir)
-
-    LOG_FILENAME = os.path.join( trading_dir, f"{timestamp}_Trading_Execution.log")
-
-    print("Logging data at ", LOG_FILENAME)
-
-    logger = create_logging(LOG_FILENAME)
-    
-    # -----------------------------
-    # Trader
-    # -----------------------------   
-    with open(config_loc) as f:
-        CONF = json.load(f)
-    f.close()
-    
-    api_key = CONF.get('key_test')
-    api_secret = CONF.get('secret_test')
-
-    try:
-        client = Client(api_key = api_key, api_secret = api_secret, tld = "com", testnet = True)
-        logger.info("Connection to Binance Test API sucessfully created.")
-    except Exception as e:
-        logger.error(f"{e}")
-    
-    
-    trader = BinanceTrader(symbol = symbol,
-                signal_loc = signal_loc, 
-                bar_length = bar_length,  
-                client  = client, 
-                model = model,
-                units = units, 
-                position = position, 
-                max_trades = max_trades,
-                max_trade_time = max_trade_time,
-                target_usdt = target_usdt, 
-                stop_usdt = stop_usdt,
-                logger = logger)
-    
-    trader.start_trading()
-    
-    #trader.start_streaming()
