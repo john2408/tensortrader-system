@@ -6,7 +6,6 @@ from binance.client import Client
 # from sklearn.metrics import accuracy_score
 from binance import ThreadedWebsocketManager
 from datetime import datetime, timedelta
-import talib as ta
 import time
 import pickle
 from xgboost import XGBClassifier
@@ -35,14 +34,17 @@ class MLTrader():
     
     def start_trading(self, historical_days):
         
-        self.twm = ThreadedWebsocketManager()
+        self.twm = ThreadedWebsocketManager(testnet = True)
         self.twm.start()
         
         if self.bar_length in self.available_intervals:
-            self.get_most_recent(symbol = self.symbol, interval = self.bar_length,
+            self.get_most_recent(symbol = self.symbol, 
+                                 interval = self.bar_length,
                                  days = historical_days)
+            
             self.twm.start_kline_socket(callback = self.stream_candles,
-                                        symbol = self.symbol, interval = self.bar_length)
+                                        symbol = self.symbol, 
+                                        interval = self.bar_length)
         # "else" to be added later in the course 
     
     def get_most_recent(self, symbol, interval, days):

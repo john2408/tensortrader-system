@@ -9,6 +9,8 @@ import logging
 
 import warnings
 warnings.filterwarnings("ignore")
+# TODO
+# Add Target and trailing stop
 
 class BinanceTrader():
     
@@ -35,13 +37,75 @@ class BinanceTrader():
         self.position = position
         self.model = model
         self.logger = logger
-    
+
+        self.available_intervals = ["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w", "1M"]
         self.trades = 0 
         self.trade_values = []
         self.signal = None
         self.signal_time = None
         self.cum_profits = 0
+        self.current_price = None
+        self.event_time = None
     
+            
+    def start_streaming(self):
+        
+        self.twm = ThreadedWebsocketManager()
+        self.twm.start()
+        
+        if self.bar_length in self.available_intervals:
+            # self.get_most_recent(symbol = self.symbol, 
+            #                      interval = self.bar_length,
+            #                      days = historical_days)
+
+            #https://python-binance.readthedocs.io/en/latest/websockets.html
+            self.twm.start_kline_socket(callback = self.handle_socket_message,
+                                        symbol = self.symbol, 
+                                        interval = self.bar_length)
+        # "else" to be added later in the course 
+        
+    def handle_socket_message(self, msg):
+        
+
+        # extract the required items from msg
+        event_time  = pd.to_datetime(msg["E"], unit = "ms")
+        start_time  = pd.to_datetime(msg["k"]["t"], unit = "ms")
+        first       = float(msg["k"]["o"])
+        high        = float(msg["k"]["h"])
+        low         = float(msg["k"]["l"])
+        close       = float(msg["k"]["c"])
+        volume      = float(msg["k"]["v"])
+        complete    =       msg["k"]["x"]
+        
+        
+        self.current_price = close
+        self.event_time = event_time
+        
+        # print(self.current_price)
+        # print(self.event_time)
+            
+    # def get_most_recent(self, symbol, interval, days):
+    
+    #     now = datetime.utcnow()
+    #     past = str(now - timedelta(days = days))
+    
+    #     bars = client.get_historical_klines(symbol = symbol, interval = interval,
+    #                                         start_str = past, end_str = None, limit = 1000)
+    #     df = pd.DataFrame(bars)
+    #     df["Date"] = pd.to_datetime(df.iloc[:,0], unit = "ms")
+    #     df.columns = ["Open Time", "Open", "High", "Low", "Close", "Volume",
+    #                   "Clos Time", "Quote Asset Volume", "Number of Trades",
+    #                   "Taker Buy Base Asset Volume", "Taker Buy Quote Asset Volume", "Ignore", "Date"]
+    #     df = df[["Date", "Open", "High", "Low", "Close", "Volume"]].copy()
+    #     df.set_index("Date", inplace = True)
+    #     for column in df.columns:
+    #         df[column] = pd.to_numeric(df[column], errors = "coerce")
+    #     df["Complete"] = [True for row in range(len(df)-1)] + [False]
+        
+    #     self.data = df
+    
+
+        
 
     def new_signal(self) -> bool:
         """Read new signal from database
@@ -294,10 +358,18 @@ class BinanceTrader():
     def start_trading(self) -> None:
         """Main method to execute trading for a given symbol. 
         """
+        # Start Symbol price Streaming
+        self.start_streaming()
+        
+        time.sleep(5)
         
         while True:
             
-            info = "\nTRADING LOG for {} | Binance Test Net".format(self.symbol)
+            info = """\nTRADING LOG for {}
+                    | Binance Test Net 
+                    | Time: {} | : Price : $ {}""".format(self.symbol, 
+                                                          self.event_time, 
+                                                          self.current_price)
         
             print(info)     
             self.logger.info(info)
@@ -332,6 +404,9 @@ class BinanceTrader():
                 
                 if stop: 
                     print("Finishing Trading")
+                    
+                    # Stop streaming
+                    self.twm.stop()
                     break                    
                 
                 info = "{} Staying in Position".format(timestamp)
@@ -340,6 +415,8 @@ class BinanceTrader():
             
             time.sleep(30)
 
+        self.twm.stop()
+        
 if __name__ == "__main__":
     
     
@@ -356,7 +433,7 @@ if __name__ == "__main__":
     config_loc = "/mnt/d/Tensor/tensortrader-system/config.json"
     path_logs = "/mnt/d/Tensor/tensortrader-system/logs/trading_execution_logs"
     model = 'TCN' 
-    bar_length = "15m"
+    bar_length = "1m"
     position = 0
     max_trade_time = 30 # minutes
     
@@ -385,10 +462,10 @@ if __name__ == "__main__":
     f.close()
     
     api_key = CONF.get('key_test')
-    secret_key = CONF.get('secret_test')
+    api_secret = CONF.get('secret_test')
 
     try:
-        client = Client(api_key = api_key, api_secret = secret_key, tld = "com", testnet = True)
+        client = Client(api_key = api_key, api_secret = api_secret, tld = "com", testnet = True)
         logger.info("Connection to Binance Test API sucessfully created.")
     except Exception as e:
         logger.error(f"{e}")
@@ -406,3 +483,5 @@ if __name__ == "__main__":
                 logger = logger)
     
     trader.start_trading()
+    
+    #trader.start_streaming()
