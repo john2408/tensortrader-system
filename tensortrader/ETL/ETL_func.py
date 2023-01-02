@@ -465,18 +465,35 @@ class DataLoader():
         """
         self.input_folder_db = input_folder_db
         
+        self.current_timestamp = None
+        self.initial_date_load = None
+        self.years_filter = None
      
+    def get_years_filter(self) -> None:
+        """Get year to load for individual
+        database yearly files. 
+        """
+        start_year = self.initial_date_load.year
+        end_year = self.current_timestamp.year
+        
+        if start_year != end_year:
+            self.years_filter = [x for x in range(start_year, end_year + 1)]
+        else:
+            self.years_filter = [start_year]
+        
+        
 
-    def load(self, n_days, symbols, years_filter) -> pd.DataFrame:
+    def load(self, n_days, symbols) -> pd.DataFrame:
 
-
-        initial_date_load = (datetime.today() - 
-                            dateutil.relativedelta.relativedelta(days = n_days))
-
+        self.current_timestamp = datetime.today()
+        self.initial_date_load = self.current_timestamp - dateutil.relativedelta.relativedelta(days = n_days)
+        
+        self.get_years_filter()
+                         
         dfs = []
 
         for symbol in symbols:
-            for year in years_filter:
+            for year in self.years_filter:
 
                 file_name = os.path.join(self.input_folder_db, 
                                     f'{symbol}', 
@@ -488,7 +505,7 @@ class DataLoader():
 
                 print(" Max Date is ", df['Date'].max())
 
-                df = df[df['Date'] >= initial_date_load].copy()
+                df = df[df['Date'] >= self.initial_date_load].copy()
                 dfs.append(df)
 
                 del df

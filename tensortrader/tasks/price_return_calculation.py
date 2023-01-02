@@ -35,7 +35,6 @@ def main():
     # Initial Parameters
     # -----------------------------
     n_days = CONF.get('n_days')
-    years_filter = CONF.get('years_filter')
     input_folder_db = CONF.get('input_folder_db')
     label_mode = CONF.get('label_mode')
     return_type = CONF.get('return_type')
@@ -140,10 +139,15 @@ def main():
 
     logger.info("Reading Historical data")
     Loader = DataLoader(input_folder_db = input_folder_db)
-
+    
     data = Loader.load(n_days = n_days,
-            symbols = SYMBOLS,
-            years_filter = years_filter)
+            symbols = SYMBOLS)
+    
+    info = "Loading data from {} until {}, years filter are {}".format(Loader.initial_date_load, 
+                                                                       Loader.initial_date_load, 
+                                                                       Loader.years_filter)
+    print(info)
+    logger.info(info)
 
     if use_resampling:
         logger.info(f"Resampling data at {resampling}")

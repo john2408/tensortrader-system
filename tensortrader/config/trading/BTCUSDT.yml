@@ -10,3 +10,4 @@ position : 0
 max_trade_time : 30 # minutes
 target_usdt : 50.0 # USDT
 stop_usdt : 30.0 #USDT
+database_loc : '/mnt/c/Tensor/Database/TRADING_EXECUTION/'

@@ -11,8 +11,12 @@ from tensortrader.tasks.task_utils import create_logging
 import sys
 
 
-
-def main(symbol):    
+# export PYTHONPATH="${PYTHONPATH}:/mnt/d/Tensor/tensortrader-system"
+def main(symbol): 
+    
+    # TODO: 
+    # Fix: Signals cannot be generated if not all models are trained 
+    # --- create boolean for completed trained models.   
     
     path = f"/mnt/d/Tensor/tensortrader-system/tensortrader/config/trading/{symbol}.yml"
     CONF = yaml.safe_load(Path(path).read_text())
@@ -34,6 +38,7 @@ def main(symbol):
     max_trade_time = CONF['max_trade_time'] # minutes
     target_usdt = CONF['target_usdt'] # USDT
     stop_usdt = CONF['stop_usdt'] #USDT
+    database_loc = CONF['database_loc']
     
     # -----------------------------
     # Logging Config
@@ -70,18 +75,19 @@ def main(symbol):
     
     
     trader = BinanceTrader(symbol = symbol,
-                signal_loc = signal_loc, 
-                bar_length = bar_length,  
-                client  = client, 
-                model = model,
-                units = units, 
-                position = position, 
-                max_trades = max_trades,
-                max_trade_time = max_trade_time,
-                target_usdt = target_usdt, 
-                stop_usdt = stop_usdt,
-                logger = logger)
-    
+                        database_loc = database_loc,
+                        signal_loc = signal_loc, 
+                        bar_length = bar_length,  
+                        client  = client, 
+                        model = model,
+                        units = units, 
+                        position = position, 
+                        max_trades = max_trades,
+                        max_trade_time = max_trade_time,
+                        target_usdt = target_usdt, 
+                        stop_usdt = stop_usdt,
+                        logger = logger)
+            
     trader.start_trading()
     
     #trader.start_streaming()

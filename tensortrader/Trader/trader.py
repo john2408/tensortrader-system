@@ -5,6 +5,7 @@ from binance import ThreadedWebsocketManager
 from datetime import datetime, timedelta
 import time
 import logging
+import os
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -14,6 +15,7 @@ class BinanceTrader():
     
     def __init__(self, 
                 symbol : str, 
+                database_loc : str,
                 signal_loc : str,
                 bar_length : str, 
                 client : Client,
@@ -28,6 +30,7 @@ class BinanceTrader():
                 ):
         
         self.symbol = symbol
+        self.database_loc = database_loc
         self.signal_loc = signal_loc        
         self.client = client
         self.bar_length = bar_length
@@ -44,15 +47,23 @@ class BinanceTrader():
         self.trades = 0 
         self.cum_profits = 0
         self.trade_values = []
+        self.trade_id = 0
         
         self.signal = None
         self.signal_time = None
         self.current_price = None
         self.event_time = None
         self.entry_price = None
-        self.trade_time = None
+        self.trade_entry_time = None
         self.target_price = None
         self.stop_price = None
+        self.trade_profit = None
+        self.trading_session_id = None
+        self.trade_base_unit = None
+        self.trading_data_path = None
+        self.trade_orderId = None
+        
+        
         
         
     def start_streaming(self) -> None:
@@ -162,7 +173,7 @@ class BinanceTrader():
                 self.logger.info(info)
                 print(info)
                          
-                order = client.create_order(symbol = self.symbol, side = "SELL", type = "MARKET", quantity = self.units)
+                order = self.client.create_order(symbol = self.symbol, side = "SELL", type = "MARKET", quantity = self.units)
                 self.report_trade(order, "GOING NEUTRAL AND STOP")
                 self.position = 0
                 
@@ -222,17 +233,14 @@ class BinanceTrader():
             return True
         
         # (3) Max Holding Time
-        if self.trade_time is not None:
-            info = "Trading Start Time was : {} ".format(self.trade_time)
+        if self.trade_entry_time is not None:
+            
+            info = "Trading Start Time was : {} ".format(self.trade_entry_time)
             #print(info)
             #self.logger.info(info)
             
-            current_trading_time = datetime.utcnow() - pd.to_datetime(self.trade_time)
+            current_trading_time = datetime.utcnow() - pd.to_datetime(self.trade_entry_time)
             max_trading_time = timedelta(minutes = self.max_trade_time)
-            
-            #info = "Current trading holding time {}".format(current_trading_time)
-            #print(info)        
-            #self.logger.info(info)
             
             if current_trading_time >= max_trading_time:
                             
@@ -281,8 +289,6 @@ class BinanceTrader():
         """
         Excecute Trades.
         """ 
-        
-        
         
         if self.signal == 1: # if signal is long -> go/stay long
             
@@ -391,46 +397,133 @@ class BinanceTrader():
             going (str): order type str.
         """
         # extract data from order object
-        side = order["side"]
-        self.trade_time = pd.to_datetime(order["transactTime"], unit = "ms")
-        base_units = float(order["executedQty"])
-        quote_units = float(order["cummulativeQuoteQty"])
-        #self.entry_price = round(quote_units / base_units, 5)
+        print(order)
+        
+        self.trade_side = order["side"]
+        self.trade_orderId = order["orderId"]
+        self.trade_entry_time = pd.to_datetime(order["transactTime"], unit = "ms")
+        self.trade_base_unit = float(order["executedQty"])
+        self.trade_qty = float(order["cummulativeQuoteQty"])
         self.entry_price = float(order["fills"][0]['price'])
         
         # calculate trading profits
         self.trades += 1
-        if side == "BUY":
-            self.trade_values.append(-quote_units)
-        elif side == "SELL":
-            self.trade_values.append(quote_units) 
+        
+        if self.trade_side  == "BUY":
+            
+            self.trade_values.append(-self.trade_qty)
+            
+        elif self.trade_side  == "SELL":
+            
+            self.trade_values.append(self.trade_qty) 
         
         if self.trades % 2 == 0:
-            real_profit = round(np.sum(self.trade_values[-2:]), 3) 
+            
+            self.trade_profit = round(np.sum(self.trade_values[-2:]), 3) 
             self.cum_profits = round(np.sum(self.trade_values), 3)
+            
+            # Write Trading data when trade is closed
+            self.write_trade_to_data_base()
+            
         else: 
-            real_profit = 0
+            
+            self.trade_profit = 0
             self.cum_profits = round(np.sum(self.trade_values[:-1]), 3)
         
+            # if new trade has been submitted
+            self.trade_id += 1
+            
+            # Write Trading data
+            self.write_trade_to_data_base()
+        
         # print trade report
-        info_trading_side = "{} | {}".format(self.trade_time, going)
-        info_transaction_details = "{} | Base_Units = {} | Quote_Units = $ {} | Price = $ {} ".format(self.trade_time, base_units, quote_units, self.entry_price)
-        info_profit_details = "{} | Profit = {} | CumProfits = {} ".format(self.trade_time, real_profit, self.cum_profits)
+        info_trading_side = "{} | {}".format(self.trade_entry_time, going)
+        info_transaction_details = "{} | self.trade_base_unit = {} | self.trade_qty = $ {} | Price = $ {} ".format(self.trade_entry_time, 
+                                                                                                                   self.trade_base_unit, 
+                                                                                                                   self.trade_qty, 
+                                                                                                                   self.entry_price)
+        info_profit_details = "{} | Profit = {} | CumProfits = {} ".format(self.trade_entry_time, self.trade_profit, self.cum_profits)
         
         print(100 * "-" + "\n")
         for info in [info_trading_side, info_transaction_details, info_profit_details]:
             print(info) 
             self.logger.info(info)
         print(100 * "-" + "\n")
+    
+    def write_trade_to_data_base(self) -> None:
+        """
+        Write trading data to database.
+        """  
+        trade_data = {
+            'trading_session_id' : [self.trading_session_id],
+            'tradeid' : [self.trade_id] ,
+            'trade_orderID' : [self.trade_orderId],
+            'trade_qty' : [self.trade_qty], 
+            'trade_base_unit' : [self.trade_base_unit],
+            'trade_profit' : [self.trade_profit],
+            'trade_entry_time': [self.trade_entry_time], 
+            'trade_entry_price' : [self.entry_price],
+            'cum_profits' : [self.cum_profits],
+            'signal': [self.signal],
+            'side' :[self.trade_side]
+                      }
         
         
+        df_to_add = pd.DataFrame(trade_data)
+        
+        if os.path.exists(self.trading_data_path):
+            
+            # Read available database
+            df = pd.read_parquet(self.trading_data_path)
+            
+            # Concat new data
+            df = pd.concat([df, df_to_add], ignore_index= True)
+            
+            # Store         
+            df.to_parquet(self.trading_data_path)
+        
+        else:
+            
+            df_to_add.to_parquet(self.trading_data_path)
+    
+    def generate_trading_data_path(self) -> None:
+        """Generate trading data location path
+        """
+        
+        os.makedirs(os.path.join(self.database_loc,  
+                                self.symbol) , 
+                    exist_ok=True)
+        
+        self.trading_data_path = os.path.join(self.database_loc, 
+                                             self.symbol, 
+                                             f"Trading_data_{self.trading_session_id}.parquet")
+        
+        info = f"Storing trading data at {self.trading_data_path}"
+        self.logger.info(info)
+        print(info)
+        
+    
+    
+    def generate_trading_sessions_id(self) -> None:
+        """Create trading session id
+        """
+        
+        now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        self.trading_session_id = self.symbol + "-" + now
+          
     def start_trading(self) -> None:
         """Main method to execute trading for a given symbol. 
         """
         # Start Symbol price Streaming
         self.start_streaming()
         
-        # For for Socket to connect
+        # Generate Trading Session ID
+        self.generate_trading_sessions_id()
+        
+        # Generate Path location to log Trading data
+        self.generate_trading_data_path()
+        
+        # Wait for Socket to connect
         time.sleep(5)
         
         while True:
@@ -441,7 +534,7 @@ class BinanceTrader():
                                                           self.event_time, 
                                                           self.current_price)
             try: 
-                # TRy getting a new Trading Signal from Database
+                # Try getting a new Trading Signal from Database
                 print(info)     
                 self.logger.info(info)
                 
@@ -463,6 +556,14 @@ class BinanceTrader():
                     self.execute_trades()
                     info = "{} .".format(timestamp)
                     print(info)
+                    self.logger.info(info)
+                
+                if self.trade_entry_time is not None:
+                                                    
+                    trade_uptime = datetime.utcnow() - pd.to_datetime(self.trade_entry_time)
+                    
+                    info = "Current trading holding time is {}".format(trade_uptime)
+                    print(info)        
                     self.logger.info(info)
                     
                 # Look for new signal every 20 seconds

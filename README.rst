@@ -40,7 +40,8 @@ To Do's
 **Base Architechture**
         * Create Trading Execution class (done)
         * Create Target/Stop management (done)
-        * Create Trading Performance Tracking Database
+        * Create Trading Performance Tracking Database (done)
+        * Adjust Getting latest Trained ML Model
 
 
 **Model Improvement**
