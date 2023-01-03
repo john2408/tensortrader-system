@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import time
 import logging
 import os
+import pymongo
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -16,6 +17,7 @@ class BinanceTrader():
     def __init__(self, 
                 symbol : str, 
                 database_loc : str,
+                mongodb_collection : pymongo.collection.Collection,
                 signal_loc : str,
                 bar_length : str, 
                 client : Client,
@@ -31,6 +33,7 @@ class BinanceTrader():
         
         self.symbol = symbol
         self.database_loc = database_loc
+        self.mongodb_collection = mongodb_collection
         self.signal_loc = signal_loc        
         self.client = client
         self.bar_length = bar_length
@@ -62,6 +65,10 @@ class BinanceTrader():
         self.trade_base_unit = None
         self.trading_data_path = None
         self.trade_orderId = None
+        
+        # Trade details
+        self.trade_data_mongodb = None
+        self.trade_data = None
         
         
         
@@ -423,7 +430,9 @@ class BinanceTrader():
             self.cum_profits = round(np.sum(self.trade_values), 3)
             
             # Write Trading data when trade is closed
-            self.write_trade_to_data_base()
+            self.generate_trade_data()
+            self.write_trade_data_parquet()
+            self.write_trade_data_mongodb()
             
         else: 
             
@@ -434,7 +443,9 @@ class BinanceTrader():
             self.trade_id += 1
             
             # Write Trading data
-            self.write_trade_to_data_base()
+            self.generate_trade_data()
+            self.write_trade_data_parquet()
+            self.write_trade_data_mongodb()
         
         # print trade report
         info_trading_side = "{} | {}".format(self.trade_entry_time, going)
@@ -450,11 +461,12 @@ class BinanceTrader():
             self.logger.info(info)
         print(100 * "-" + "\n")
     
-    def write_trade_to_data_base(self) -> None:
+
+    def generate_trade_data(self) -> None:
+        """Generate Trade Data
         """
-        Write trading data to database.
-        """  
-        trade_data = {
+        
+        self.trade_data = {
             'trading_session_id' : [self.trading_session_id],
             'tradeid' : [self.trade_id] ,
             'trade_orderID' : [self.trade_orderId],
@@ -464,12 +476,31 @@ class BinanceTrader():
             'trade_entry_time': [self.trade_entry_time], 
             'trade_entry_price' : [self.entry_price],
             'cum_profits' : [self.cum_profits],
-            'signal': [self.signal],
+            'signal': [int(self.signal)],
             'side' :[self.trade_side]
                       }
         
+        self.trade_data_mongodb = {
+            'trading_session_id' : self.trading_session_id,
+            'tradeid' : self.trade_id ,
+            'trade_orderID' : self.trade_orderId,
+            'trade_qty' : self.trade_qty, 
+            'trade_base_unit' : self.trade_base_unit,
+            'trade_profit' : self.trade_profit,
+            'trade_entry_time': self.trade_entry_time, 
+            'trade_entry_price' : self.entry_price,
+            'cum_profits' : self.cum_profits,
+            'signal': int(self.signal),
+            'side' :self.trade_side
+                      }
+   
+    
+    def write_trade_data_parquet(self) -> None:
+        """
+        Write trading data to database.
+        """  
         
-        df_to_add = pd.DataFrame(trade_data)
+        df_to_add = pd.DataFrame(self.trade_data)
         
         if os.path.exists(self.trading_data_path):
             
@@ -485,6 +516,16 @@ class BinanceTrader():
         else:
             
             df_to_add.to_parquet(self.trading_data_path)
+            
+    def write_trade_data_mongodb(self) -> None:
+        """
+        Write data to Mongo DB database.
+        """  
+           
+        x = self.mongodb_collection.insert_one(self.trade_data_mongodb)
+        
+        self.logger.info(f"Sending data to MongoDB | Status: {x}")
+        
     
     def generate_trading_data_path(self) -> None:
         """Generate trading data location path

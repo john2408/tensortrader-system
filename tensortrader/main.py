@@ -4,6 +4,7 @@ import yaml
 from pathlib import Path
 from datetime import datetime
 import json
+import pymongo
 
 from binance.client import Client
 from tensortrader.Trader.trader import BinanceTrader
@@ -15,8 +16,9 @@ import sys
 def main(symbol): 
     
     # TODO: 
-    # Fix: Signals cannot be generated if not all models are trained 
-    # --- create boolean for completed trained models.   
+    # (1) Fix: Signals cannot be generated if not all models are trained 
+    # --- create boolean for completed trained models. 
+    # (2) Imporve target values on max(latest_max_or_min, target_expected)  
     
     path = f"/mnt/d/Tensor/tensortrader-system/tensortrader/config/trading/{symbol}.yml"
     CONF = yaml.safe_load(Path(path).read_text())
@@ -68,17 +70,32 @@ def main(symbol):
     api_secret = SECRETS.get('secret_test')
 
     try:
-        client = Client(api_key = api_key, api_secret = api_secret, tld = "com", testnet = True)
+        binance_client = Client(api_key = api_key, api_secret = api_secret, tld = "com", testnet = True)
         logger.info("Connection to Binance Test API sucessfully created.")
+    except Exception as e:
+        logger.error(f"{e}")
+        
+    try:   
+        MONGO_PASSWORD = SECRETS.get('MONGO_PASSWORD')
+        MONGO_USER = SECRETS.get('MONGO_USER')
+        MONGO_URL = "mongodb+srv://{}:{}@tensor-database.rjyvv.mongodb.net/?retryWrites=true&w=majority".format(MONGO_USER,MONGO_PASSWORD)
+
+        mongo_client = pymongo.MongoClient(MONGO_URL)
+            
+        mongodb_database = mongo_client["Trading_Execution"]
+        mongodb_collection = mongodb_database[f"{symbol}"]
+        
+        logger.info("Connection to MONGO DB sucessfully created.")
     except Exception as e:
         logger.error(f"{e}")
     
     
     trader = BinanceTrader(symbol = symbol,
                         database_loc = database_loc,
+                        mongodb_collection = mongodb_collection,
                         signal_loc = signal_loc, 
                         bar_length = bar_length,  
-                        client  = client, 
+                        client  = binance_client, 
                         model = model,
                         units = units, 
                         position = position, 
