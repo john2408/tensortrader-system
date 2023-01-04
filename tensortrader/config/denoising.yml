@@ -28,7 +28,7 @@ pacf_days_subset : 60
 
 # Number of hours to consider for 
 # lag pattern lookup
-nn_hours_pattern_lookup : 24
+nn_hours_pattern_lookup : 8
 
 # Local timezone
 time_zone : 'Europe/Berlin'

@@ -121,8 +121,8 @@ class BinanceTrader():
         new_signal_time = self.df_signal['creation_time'].iloc[0]
         new_signal = self.df_signal['position'].values[0]
         
-        print("Latest signal time:  {}".format(self.signal_time))
-        print("New signal time : {}".format(new_signal_time))
+        # print("Latest signal time:  {}".format(self.signal_time))
+        # print("New signal time : {}".format(new_signal_time))
         
         if (new_signal_time != self.signal_time):
                     
@@ -133,8 +133,8 @@ class BinanceTrader():
             print("New Signal is: ", self.signal)
             return True
         
-        self.logger.info("NO New Signal Available yet")
-        print("NO New Signal Available yet")
+        #self.logger.info("No New Signal Available yet")
+        
         return False
         
     
@@ -253,7 +253,7 @@ class BinanceTrader():
             
         
         # (3) Max Holding Time
-        if self.trade_entry_time is not None:
+        elif self.trade_entry_time is not None:
             
             info = "Trading Start Time was : {} ".format(self.trade_entry_time)
             #print(info)
@@ -264,12 +264,9 @@ class BinanceTrader():
             
             if current_trading_time >= max_trading_time:
                             
-                info = "More than max time time allowed {}. Closing Trade".format(self.max_trade_time)
+                info = "More than max time time allowed {} Minutes. Closing Trade".format(self.max_trade_time)
                 self.logger.info(info)
                 print(info)
-                
-                self.logger.info("GOING NEUTRAL AND STOP")
-                self.position = self.NEUTRAL
                 
                 if self.position == self.BUY:
                     
@@ -287,6 +284,45 @@ class BinanceTrader():
                 else: 
                     self.logger.info("STAYING NEUTRAL")
                     print("STAYING NEUTRAL")
+                    
+                self.logger.info("GOING NEUTRAL AND STOP")
+                self.position = self.NEUTRAL
+        
+            
+        # Get Latest Trading Signals
+        self.get_signal_data()
+        
+        # Log Status every two minutes
+        current_timestamp = datetime.now()
+        log_info = current_timestamp.minute % 2 \
+                    and (current_timestamp.second == 0) \
+                    or (current_timestamp.second == 1)
+                    
+        if log_info:
+            
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            info = """\n{} TRADING LOG for {} 
+                        | Price is : {} 
+                        | Position is: {}
+                        | Last Signal is : {} """.format(timestamp,
+                                                         self.symbol, 
+                                                         self.current_price, 
+                                                         self.position, 
+                                                         self.signal)
+            print(info)
+            self.logger.info(info)
+        
+        if self.new_signal():
+            
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S") 
+            
+            info = "{} New Signal available".format(timestamp)
+            print(info)
+            self.logger.info(info)
+            
+            self.execute_trades()
+                
                 
    
     def calculate_target_stop(self) -> None:
@@ -329,12 +365,7 @@ class BinanceTrader():
                 self.logger.info("GOING LONG") 
                 print("GOING LONG")
                 
-                # Set position to LONG
-                self.position = self.BUY  
-                
-                # Calculate Target and Stop
-                self.calculate_target_stop()
-                
+
             elif self.position == self.BUY:
                 
                 self.logger.info("STAYING LONG") 
@@ -348,9 +379,12 @@ class BinanceTrader():
                 
                 self.logger.info("GOING LONG")
                 print("GOING LONG")
-                
-                # Set position to NEUTRAL
-                self.position = self.NEUTRAL  
+               
+            # Set position to LONG
+            self.position = self.BUY  
+            
+            # Calculate Target and Stop            
+            self.calculate_target_stop()
             
                  
         elif self.signal == self.SELL: # if signal is short -> go/stay long
@@ -362,9 +396,7 @@ class BinanceTrader():
                 
                 self.logger.info("GOING SHORT")
                 print("GOING SHORT")
-                
-                # Set position to NEUTRAL
-                self.position = self.NEUTRAL 
+            
                 
             elif self.position == self.BUY:
                 
@@ -382,17 +414,17 @@ class BinanceTrader():
                 self.logger.info("GOING SHORT")
                 print("GOING SHORT")
                 
-                # Set position to SHORT  
-                self.position = self.SELL
-                
-                # Calculate Target and Stop
-                self.calculate_target_stop()
             
             elif self.position == self.SELL:
                 
                 self.logger.info("STAYING SHORT")
                 print("STAYING SHORT")
                 
+            # Set position to SHORT  
+            self.position = self.SELL
+            
+            # Calculate Target and Stop
+            self.calculate_target_stop()
 
         elif self.signal == self.NEUTRAL: # if signal is neutral -> close any trade
             
@@ -575,67 +607,30 @@ class BinanceTrader():
     def start_trading(self) -> None:
         """Main method to execute trading for a given symbol. 
         """
-        # Start Symbol price Streaming
-        self.start_streaming()
         
-        # Generate Trading Session ID
-        self.generate_trading_sessions_id()
-        
-        # Generate Path location to log Trading data
-        self.generate_trading_data_path()
-        
-        # Wait for Socket to connect
-        time.sleep(5)
-        
-        while True:
-            
+        try: 
             info = """\nTRADING LOG for {}
-                    | Binance Test Net 
-                    | Time: {} | : Price : $ {}""".format(self.symbol, 
-                                                          self.event_time, 
-                                                          self.current_price)
-            try: 
-                # Try getting a new Trading Signal from Database
-                print(info)     
-                self.logger.info(info)
-                
-                # Get Latest Trading Signals
-                self.get_signal_data()
-                
-                info = "\nTRADING LOG for {} | Position is {}".format(self.symbol, self.position)
-                print(info)
-                self.logger.info(info)
-                
-                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S") 
-                
-                if self.new_signal():
-                    
-                    info = "{} New Signal available".format(timestamp)
-                    print(info)
-                    self.logger.info(info)
-                    
-                    self.execute_trades()
-                    info = "{} .".format(timestamp)
-                    print(info)
-                    self.logger.info(info)
-                
-                if self.trade_entry_time is not None:
-                                                    
-                    trade_uptime = datetime.utcnow() - pd.to_datetime(self.trade_entry_time)
-                    
-                    info = "Current trading holding time is {}".format(trade_uptime)
-                    print(info)        
-                    self.logger.info(info)
-                    
-                # Look for new signal every 20 seconds
-                time.sleep(20)
-                
-                if self.trades >= self.max_trades:
-                    self.logger.info("Stopping Trading Session")
-                    break
-                
-            except Exception as e:
+            | Binance Test Net 
+            | Time: {} | : Price : $ {}""".format(self.symbol, 
+                                                    self.event_time, 
+                                                    self.current_price)
+            
+            # Try getting a new Trading Signal from Database
+            print(info)     
+            self.logger.info(info)
+            
+            # Generate Trading Session ID
+            self.generate_trading_sessions_id()
+            
+            # Generate Path location to log Trading data
+            self.generate_trading_data_path()
+                        
+            # Start Symbol price Streaming
+            self.start_streaming()
+
+            
+        except Exception as e:
                 print(e)
                 self.logger.error(e)
-                break
         
+            

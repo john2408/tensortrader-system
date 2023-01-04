@@ -1,7 +1,7 @@
 # -----------------------------
 # Initial Parameters
 # -----------------------------
-n_days : 65 # Number of days to load from last data update
+n_days : 90 # Number of days to load from last data update
 time_zone : 'Europe/Berlin'
 input_folder_db : "/mnt/c/Tensor/Database/Cryptos/"
 output_folder_db: "/mnt/c/Tensor/Database/PRICE_RETURNS"

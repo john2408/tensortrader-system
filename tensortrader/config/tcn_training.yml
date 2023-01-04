@@ -49,11 +49,11 @@ wavelet : "sym4"
 minute_sampling : 15
 
 # lookback subset to PACF pattern search
-pacf_days_subset : 60
+pacf_days_subset : 90
 
 # Number of hours to consider for 
 # lag pattern lookup
-nn_hours_pattern_lookup : 24
+nn_hours_pattern_lookup : 8
 
 # Local timezone
 time_zone : 'Europe/Berlin'
