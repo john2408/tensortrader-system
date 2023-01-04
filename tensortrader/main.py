@@ -13,12 +13,17 @@ import sys
 
 
 # export PYTHONPATH="${PYTHONPATH}:/mnt/d/Tensor/tensortrader-system"
+# run --> 
+#  conda activate Tensor
+#  cd tensortrader/ & python main.py BTCUSDT
 def main(symbol): 
     
     # TODO: 
     # (1) Fix: Signals cannot be generated if not all models are trained 
     # --- create boolean for completed trained models. 
-    # (2) Imporve target values on max(latest_max_or_min, target_expected)  
+    # (2) Imporve target values on max(latest_max_or_min, target_expected) 
+    # Error: APIError(code=-1021): Timestamp for this request is outside of the recvWindow.
+    # 2023-01-04 02:18:36 AM APIError(code=-1021): Timestamp for this request is outside of the recvWindow. 
     
     path = f"/mnt/d/Tensor/tensortrader-system/tensortrader/config/trading/{symbol}.yml"
     CONF = yaml.safe_load(Path(path).read_text())
