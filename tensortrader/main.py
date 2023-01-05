@@ -25,6 +25,8 @@ def main(symbol):
     # Error: APIError(code=-1021): Timestamp for this request is outside of the recvWindow.
     # 2023-01-04 02:18:36 AM APIError(code=-1021): Timestamp for this request is outside of the recvWindow. 
     
+    #https://stackoverflow.com/questions/61971027/how-to-change-binance-server-time-using-python#:~:text=Start%20%2D%3E%20search%20date%20and%20time,clock%2C%20and%20press%20Sync%20now.
+
     path = f"/mnt/d/Tensor/tensortrader-system/tensortrader/config/trading/{symbol}.yml"
     CONF = yaml.safe_load(Path(path).read_text())
     
@@ -109,9 +111,10 @@ def main(symbol):
                         target_usdt = target_usdt, 
                         stop_usdt = stop_usdt,
                         logger = logger)
-            
+          
     trader.start_trading()
-    
+
+        
     #trader.start_streaming()
     
 if __name__ == "__main__":

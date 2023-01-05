@@ -84,7 +84,9 @@ class BinanceTrader():
         self.twm.start()
         
         if self.bar_length in self.available_intervals:
-
+            
+            os.system('w32tm/resync')  
+            
             #https://python-binance.readthedocs.io/en/latest/websockets.html
             self.twm.start_kline_socket(callback = self.manage_position,
                                         symbol = self.symbol, 
@@ -297,6 +299,14 @@ class BinanceTrader():
         log_info = current_timestamp.minute % 2 \
                     and (current_timestamp.second == 0) \
                     or (current_timestamp.second == 1)
+         
+        # Resync time to avoid server error           
+        resync_time = current_timestamp.minute % 20 \
+                    and (current_timestamp.second == 0) \
+                    or (current_timestamp.second == 1)
+                    
+        if resync_time:
+            os.system('w32tm/resync')       
                     
         if log_info:
             
@@ -632,5 +642,8 @@ class BinanceTrader():
         except Exception as e:
                 print(e)
                 self.logger.error(e)
+                substring = 'Timestamp for this request is outside of the recvWindow.'
+                if substring in e.message:
+                    os.system('w32tm/resync')  
         
             
