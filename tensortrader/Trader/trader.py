@@ -280,12 +280,12 @@ class BinanceTrader():
                     
                 else: 
                     self.logger.info("STAYING NEUTRAL")
+                    print("STAYING NEUTRAL")
                     
                 self.logger.info("GOING NEUTRAL AND STOP")
                 self.position = TraderSide.NEUTRAL
-                
-                # Set Trading Time back to None
                 self.trade_entry_time = None
+        
     
     def ml_signal_trader(self):
         """
@@ -620,12 +620,7 @@ class BinanceTrader():
         """Main method to execute trading for a given symbol. 
         """
         
-        try: 
-
-            
-            # Try getting a new Trading Signal from Database
-            print(info)     
-            self.logger.info(info)
+        try:         
             
             # Generate Trading Session ID
             self.generate_trading_sessions_id()
@@ -636,13 +631,15 @@ class BinanceTrader():
             # Start Symbol price Streaming
             self.start_streaming()
             
-             
-             
             info = """\nTRADING LOG for {}
             | Binance Test Net 
             | Time: {} | : Price : $ {}""".format(self.symbol, 
                                                     self.event_time, 
                                                     self.current_price)
+            
+            # Try getting a new Trading Signal from Database
+            print(info)     
+            self.logger.info(info)
             
             # Look for a new signal and trade
             while True:
