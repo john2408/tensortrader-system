@@ -272,7 +272,10 @@ class BinanceTrader():
                 
                 if self.position == self.BUY:
                     
-                    order = self.client.create_order(symbol = self.symbol, side = "SELL", type = "MARKET", quantity = self.units)
+                    order = self.client.create_order(symbol = self.symbol, 
+                                                     side = "SELL", 
+                                                     type = "MARKET", 
+                                                     quantity = self.units)
                     
                     self.report_trade(order, "GOING NEUTRAL AND STOP")
                     
@@ -280,7 +283,11 @@ class BinanceTrader():
                     
                 elif self.position == self.SELL:
                     
-                    order = self.client.create_order(symbol = self.symbol, side = "BUY", type = "MARKET", quantity = self.units)
+                    order = self.client.create_order(symbol = self.symbol, 
+                                                     side = "BUY", 
+                                                     type = "MARKET", 
+                                                     quantity = self.units)
+                    
                     self.report_trade(order, "GOING NEUTRAL AND STOP")
                     
                 else: 
@@ -296,14 +303,14 @@ class BinanceTrader():
         
         # Log Status every two minutes
         current_timestamp = datetime.now()
-        log_info = current_timestamp.minute % 2 \
-                    and (current_timestamp.second == 0) \
-                    or (current_timestamp.second == 1)
+        log_info = (current_timestamp.minute % 2 == 0) \
+                    and ((current_timestamp.second == 0) \
+                    or (current_timestamp.second == 1))
          
         # Resync time to avoid server error           
-        resync_time = current_timestamp.minute % 20 \
-                    and (current_timestamp.second == 0) \
-                    or (current_timestamp.second == 1)
+        resync_time = (current_timestamp.minute % 20 == 0) \
+                    and ( (current_timestamp.second == 0) \
+                    or (current_timestamp.second == 1))
                     
         if resync_time:
             os.system('w32tm/resync')       
@@ -337,6 +344,7 @@ class BinanceTrader():
    
     def calculate_target_stop(self) -> None:
         """Define Target and Stops trails
+        https://github.com/binance/binance-spot-api-docs/blob/master/faqs/trailing-stop-faq.md
         """
         
         self.target_price = self.entry_price + self.target_usdt * self.position
@@ -618,32 +626,32 @@ class BinanceTrader():
         """Main method to execute trading for a given symbol. 
         """
         
-        try: 
-            info = """\nTRADING LOG for {}
-            | Binance Test Net 
-            | Time: {} | : Price : $ {}""".format(self.symbol, 
-                                                    self.event_time, 
-                                                    self.current_price)
-            
-            # Try getting a new Trading Signal from Database
-            print(info)     
-            self.logger.info(info)
-            
-            # Generate Trading Session ID
-            self.generate_trading_sessions_id()
-            
-            # Generate Path location to log Trading data
-            self.generate_trading_data_path()
-                        
-            # Start Symbol price Streaming
-            self.start_streaming()
+        #try: 
+        info = """\nTRADING LOG for {}
+        | Binance Test Net 
+        | Time: {} | : Price : $ {}""".format(self.symbol, 
+                                                self.event_time, 
+                                                self.current_price)
+        
+        # Try getting a new Trading Signal from Database
+        print(info)     
+        self.logger.info(info)
+        
+        # Generate Trading Session ID
+        self.generate_trading_sessions_id()
+        
+        # Generate Path location to log Trading data
+        self.generate_trading_data_path()
+                    
+        # Start Symbol price Streaming
+        self.start_streaming()
 
             
-        except Exception as e:
-                print(e)
-                self.logger.error(e)
-                substring = 'Timestamp for this request is outside of the recvWindow.'
-                if substring in e.message:
-                    os.system('w32tm/resync')  
+        # except Exception as e:
+        #         print(e)
+        #         self.logger.error(e)
+        #         substring = 'Timestamp for this request is outside of the recvWindow.'
+        #         if substring in e.message:
+        #             os.system('w32tm/resync')  
         
             
