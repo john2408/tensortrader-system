@@ -26,6 +26,13 @@ def main(symbol):
     # 2023-01-04 02:18:36 AM APIError(code=-1021): Timestamp for this request is outside of the recvWindow. 
     
     #https://stackoverflow.com/questions/61971027/how-to-change-binance-server-time-using-python#:~:text=Start%20%2D%3E%20search%20date%20and%20time,clock%2C%20and%20press%20Sync%20now.
+    
+    # (3)
+    # Task exception was never retrieved
+    # future: <Task finished name='Task-5' coro=<ThreadedApiManager.start_listener() done, 
+    # defined at /home/johtorr/anaconda3/envs/Tensor/lib/python3.8/site-packages/binance/threaded_stream.py:42> 
+    # exception=ArrowInvalid("Could not open Parquet input source '<Buffer>': Parquet file size is 0 bytes")>
+    # Traceback (most recent call last):
 
     path = f"/mnt/d/Tensor/tensortrader-system/tensortrader/config/trading/{symbol}.yml"
     CONF = yaml.safe_load(Path(path).read_text())
