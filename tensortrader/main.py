@@ -37,7 +37,7 @@ def main(symbol):
     path = f"/mnt/d/Tensor/tensortrader-system/tensortrader/config/trading/{symbol}.yml"
     CONF = yaml.safe_load(Path(path).read_text())
     
-    #print(CONF)
+    print(CONF)
     
     # -----------------------------
     # Parameters
@@ -84,7 +84,10 @@ def main(symbol):
     api_secret = SECRETS.get('secret_test')
 
     try:
-        binance_client = Client(api_key = api_key, api_secret = api_secret, tld = "com", testnet = True)
+        binance_client = Client(api_key = api_key, 
+                                api_secret = api_secret, 
+                                tld = "com", 
+                                testnet = True)
         logger.info("Connection to Binance Test API sucessfully created.")
     except Exception as e:
         logger.error(f"{e}")

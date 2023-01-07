@@ -8,9 +8,12 @@ import logging
 import os
 import pymongo
 from enum import Enum
+from typing import Dict, Optional, List, Tuple
 
 import warnings
 warnings.filterwarnings("ignore")
+
+RECWINDOW = 60000
 
 class TraderSide(int, Enum):
     SELL = -1
@@ -21,6 +24,8 @@ class TraderSide(int, Enum):
 # TODO: Check stability of https://github.com/binance/binance-connector-python as an option 
 
 class BinanceTrader():
+    
+    
     
     def __init__(self, 
                 symbol : str, 
@@ -64,11 +69,14 @@ class BinanceTrader():
         self.signal_time = None
         self.current_price = None
         self.event_time = None
+        
+        # Trade Infos
         self.entry_price = None
         self.trade_entry_time = None
         self.target_price = None
         self.stop_price = None
         self.trade_profit = None
+        
         self.trading_session_id = None
         self.trade_base_unit = None
         self.trading_data_path = None
@@ -156,16 +164,19 @@ class BinanceTrader():
 
         self.logger.info("Reading Signal data from database")
         
-    def manage_position(self):
-        """Manage Position and Trades, using
-        the Binance ThreadedWebsocketManager callback.
+    def manage_position(self) -> bool:
+        """Manage Position and Trades. 
+        
+        Returns TRUE if max number of trades are reached. 
+        Otherwise returns FALSE to continue trading. 
+        
         """
         
         # (1) Target/Stop Prices
         if self.position == TraderSide.BUY:
             
-            target_reached = self.entry_price is not None and self.current_price >= self.target_price
-            stop_reached = self.entry_price is not None and self.current_price <= self.stop_price
+            target_reached = (self.entry_price is not None) and self.current_price >= self.target_price
+            stop_reached =( self.entry_price is not None) and self.current_price <= self.stop_price
                         
             if (target_reached) or (stop_reached):
                 
@@ -177,25 +188,19 @@ class BinanceTrader():
                 
                 self.logger.info(info)
                 print(info)
-                         
-                order = self.client.create_order(symbol = self.symbol, side = "SELL", type = "MARKET", quantity = self.units)
-                
-                self.position = TraderSide.NEUTRAL
-                self.logger.info("GOING NEUTRAL AND STOP")
-                
-                self.report_trade(order, "GOING NEUTRAL AND STOP")
-                
+                  
+                # close trade      
+                self.close_trade()
+                                
    
         
         if self.position == TraderSide.SELL:
             
-            target_reached = self.entry_price is not None and self.current_price <= self.target_price
-            stop_reached = self.entry_price is not None and self.current_price >= self.stop_price
+            target_reached = (self.entry_price is not None) and self.current_price <= self.target_price
+            stop_reached = (self.entry_price is not None) and self.current_price >= self.stop_price
             
             if (target_reached) or (stop_reached):
-                
-
-                
+                                
                 if target_reached:
                     info = "Target Price has been reached Current Price: {} - Target Price: {}".format(self.current_price, self.target_price)
                 elif stop_reached:
@@ -204,46 +209,26 @@ class BinanceTrader():
                 self.logger.info(info)
                 print(info)
                 
-                order = self.client.create_order(symbol = self.symbol, side = "BUY", type = "MARKET", quantity = self.units)
-                
-                self.position = TraderSide.NEUTRAL
-                self.logger.info("GOING NEUTRAL AND STOP")
-                
-                self.report_trade(order, "GOING NEUTRAL AND STOP")
-                
+                # close trade  
+                self.close_trade() 
             
-        
         # (2) Max Number of trades per session
         # stop trading session
         if self.trades >= self.max_trades: # stop stream after 10 trades per day
             
+            self.logger.info("""More than {} Trades executed. 
+                             Stoping traiding execution.""".format(self.max_trades))
+            
+            # Close open trade
+            self.close_trade()   
+            
             # Stop Streaming
             self.twm.stop()
             
-            self.logger.info("More than {} Trades executed. Stoping traiding execution.".format(self.max_trades))
-            
-                
-            if self.position == TraderSide.BUY:
-                
-                order = self.client.create_order(symbol = self.symbol, side = "SELL", type = "MARKET", quantity = self.units)
-                self.report_trade(order, "GOING NEUTRAL AND STOP")
-                
-                
-            elif self.position == TraderSide.SELL:
-                
-                order = self.client.create_order(symbol = self.symbol, side = "BUY", type = "MARKET", quantity = self.units)
-                self.report_trade(order, "GOING NEUTRAL AND STOP")
-                
-            else: 
-                self.logger.info("STAYING NEUTRAL")
-                print("STAYING NEUTRAL")
-                
-            self.position = TraderSide.NEUTRAL
-            self.logger.info("GOING NEUTRAL AND STOP")    
-            
+            return True        
         
         # (3) Max Holding Time
-        elif self.trade_entry_time is not None:
+        if self.trade_entry_time is not None:
             
             info = "Trading Start Time was : {} ".format(self.trade_entry_time)
             #print(info)
@@ -258,34 +243,43 @@ class BinanceTrader():
                 self.logger.info(info)
                 print(info)
                 
-                if self.position == TraderSide.BUY:
-                    
-                    order = self.client.create_order(symbol = self.symbol, 
-                                                     side = "SELL", 
-                                                     type = "MARKET", 
-                                                     quantity = self.units)
-                    
-                    self.report_trade(order, "GOING NEUTRAL AND STOP")
-                    
-                    
-                    
-                elif self.position == TraderSide.SELL:
-                    
-                    order = self.client.create_order(symbol = self.symbol, 
-                                                     side = "BUY", 
-                                                     type = "MARKET", 
-                                                     quantity = self.units)
-                    
-                    self.report_trade(order, "GOING NEUTRAL AND STOP")
-                    
-                else: 
-                    self.logger.info("STAYING NEUTRAL")
-                    print("STAYING NEUTRAL")
-                    
-                self.logger.info("GOING NEUTRAL AND STOP")
-                self.position = TraderSide.NEUTRAL
-                self.trade_entry_time = None
+                self.close_trade()
+                        
+        return False
+    
+    def close_trade(self):
+        """Set all trade-related variable to none
+        """
+
+        if self.position == TraderSide.BUY:
+            
+            order = self.client.create_order(symbol = self.symbol, 
+                                                side = "SELL", 
+                                                type = "MARKET", 
+                                                quantity = self.units)
+            
+            self.report_trade(order, "GOING NEUTRAL AND STOP")
+            
+            
+        elif self.position == TraderSide.SELL:
+            
+            order = self.client.create_order(symbol = self.symbol, 
+                                                side = "BUY", 
+                                                type = "MARKET", 
+                                                quantity = self.units)
+            
+            self.report_trade(order, "GOING NEUTRAL AND STOP")
         
+        
+        self.logger.info("GOING NEUTRAL AND STOP")
+           
+        self.position = TraderSide.NEUTRAL
+        self.entry_price = None
+        self.trade_entry_time = None
+        self.target_price = None
+        self.stop_price = None
+        self.trade_profit = None
+
     
     def ml_signal_trader(self):
         """
@@ -362,7 +356,11 @@ class BinanceTrader():
             
             if self.position == TraderSide.SELL:
                 
-                order = self.client.create_order(symbol = self.symbol, side = "BUY", type = "MARKET", quantity = self.units)
+                order = self.client.create_order(symbol = self.symbol, 
+                                                 side = "BUY", 
+                                                 type = "MARKET", 
+                                                 quantity = self.units, 
+                                                 recvWindow = RECWINDOW)
                 
                 self.report_trade(order, "GOING NEUTRAL") 
                 
@@ -371,7 +369,12 @@ class BinanceTrader():
                 
                 time.sleep(0.1)
                 
-                order = self.client.create_order(symbol = self.symbol, side = "BUY", type = "MARKET", quantity = self.units)
+                order = self.client.create_order(symbol = self.symbol, 
+                                                 side = "BUY", 
+                                                 type = "MARKET", 
+                                                 quantity = self.units, 
+                                                 recvWindow = RECWINDOW)
+                
                 self.report_trade(order, "GOING LONG")  
                 
                 self.logger.info("GOING LONG") 
@@ -385,7 +388,11 @@ class BinanceTrader():
             
             elif self.position == TraderSide.NEUTRAL:
                 
-                order = self.client.create_order(symbol = self.symbol, side = "BUY", type = "MARKET", quantity = self.units)
+                order = self.client.create_order(symbol = self.symbol, 
+                                                 side = "BUY", 
+                                                 type = "MARKET", 
+                                                 quantity = self.units, 
+                                                 recvWindow = RECWINDOW)
                                  
                 self.report_trade(order, "GOING LONG")  
                 
@@ -403,7 +410,12 @@ class BinanceTrader():
             
             if self.position == TraderSide.NEUTRAL:
                 
-                order = self.client.create_order(symbol = self.symbol, side = "SELL", type = "MARKET", quantity = self.units)
+                order = self.client.create_order(symbol = self.symbol, 
+                                                 side = "SELL", 
+                                                 type = "MARKET", 
+                                                 quantity = self.units, 
+                                                 recvWindow = RECWINDOW)
+                
                 self.report_trade(order, "GOING SHORT") 
                 
                 self.logger.info("GOING SHORT")
@@ -412,7 +424,11 @@ class BinanceTrader():
                 
             elif self.position == TraderSide.BUY:
                 
-                order = self.client.create_order(symbol = self.symbol, side = "SELL", type = "MARKET", quantity = self.units)
+                order = self.client.create_order(symbol = self.symbol, 
+                                                 side = "SELL", 
+                                                 type = "MARKET", 
+                                                 quantity = self.units, 
+                                                 recvWindow = RECWINDOW)
                 self.report_trade(order, "GOING NEUTRAL")
                 
                 self.logger.info("GOING NEUTRAL")
@@ -420,7 +436,12 @@ class BinanceTrader():
                 
                 time.sleep(0.1)
                 
-                order = self.client.create_order(symbol = self.symbol, side = "SELL", type = "MARKET", quantity = self.units)
+                order = self.client.create_order(symbol = self.symbol, 
+                                                 side = "SELL", 
+                                                 type = "MARKET", 
+                                                 quantity = self.units, 
+                                                 recvWindow = RECWINDOW)
+                
                 self.report_trade(order, "GOING SHORT")
                 
                 self.logger.info("GOING SHORT")
@@ -442,7 +463,12 @@ class BinanceTrader():
             
             if self.position == TraderSide.BUY:
                 
-                order = self.client.create_order(symbol = self.symbol, side = "SELL", type = "MARKET", quantity = self.units)
+                order = self.client.create_order(symbol = self.symbol, 
+                                                 side = "SELL", 
+                                                 type = "MARKET", 
+                                                 quantity = self.units, 
+                                                 recvWindow = RECWINDOW)
+                
                 self.report_trade(order, "GOING NEUTRAL") 
                 
                 self.logger.info("GOING NEUTRAL")
@@ -450,7 +476,12 @@ class BinanceTrader():
                 
             elif self.position == TraderSide.SELL:
                 
-                order = self.client.create_order(symbol = self.symbol, side = "BUY", type = "MARKET", quantity = self.units)
+                order = self.client.create_order(symbol = self.symbol, 
+                                                 side = "BUY", 
+                                                 type = "MARKET", 
+                                                 quantity = self.units, 
+                                                 recvWindow = RECWINDOW)
+                
                 self.report_trade(order, "GOING NEUTRAL") 
                 
                 self.logger.info("GOING NEUTRAL")
@@ -458,6 +489,10 @@ class BinanceTrader():
             
             # Set position to NEUTRAL 
             self.position = TraderSide.NEUTRAL
+            self.entry_price = None
+            self.trade_entry_time = None
+            self.target_price = None
+            self.stop_price = None
         
         
     def report_trade(self, order: dict, going :str) -> None: 
@@ -631,6 +666,9 @@ class BinanceTrader():
             # Start Symbol price Streaming
             self.start_streaming()
             
+            # Wait for streaming to start
+            time.sleep(5) 
+            
             info = """\nTRADING LOG for {}
             | Binance Test Net 
             | Time: {} | : Price : $ {}""".format(self.symbol, 
@@ -641,12 +679,22 @@ class BinanceTrader():
             print(info)     
             self.logger.info(info)
             
+            
             # Look for a new signal and trade
             while True:
                 
-                self.manage_position()
+                stop_session = self.manage_position()
                 
                 time.sleep(1)
+                
+                # If max number of trades are reached
+                # stop trading session
+                if stop_session: 
+                    
+                    info = "Max number of trades reached. Ending trading session."
+                    print(info)     
+                    self.logger.info(info)
+                    break
                 
                 self.ml_signal_trader()
                 
@@ -656,7 +704,7 @@ class BinanceTrader():
                 print(e)
                 self.logger.error(e)
                 substring = 'Timestamp for this request is outside of the recvWindow.'
-                if substring in e.message:
+                if substring in f"{e}":
                     os.system('w32tm/resync')  
         
                 self.twm.stop()
