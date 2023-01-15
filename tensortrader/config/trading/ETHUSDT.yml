@@ -1,6 +1,6 @@
 symbol : "ETHUSDT"
 units : 0.1
-max_trades : 20
+max_trades : 200
 signal_loc : '/mnt/c/Tensor/Database/TRADING_SIGNALS/Trading_Signals.parquet'
 config_loc : "/mnt/d/Tensor/tensortrader-system/config.json"
 path_logs : "/mnt/d/Tensor/tensortrader-system/logs/trading_execution_logs"
