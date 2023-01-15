@@ -9,6 +9,8 @@ import os
 import pymongo
 from enum import Enum
 from typing import Dict, Optional, List, Tuple
+import time
+
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -20,8 +22,10 @@ class TraderSide(int, Enum):
     BUY = 1
     NEUTRAL = 0
 
-# TODO: Implement Stop and Target using Binance API
+# TODO: Implement Stop and Target using Binance API ( not possible in Spot market)
 # TODO: Check stability of https://github.com/binance/binance-connector-python as an option 
+
+# os.system('w32tm/resync') - only works on windows OS
 
 class BinanceTrader():
     
@@ -85,7 +89,17 @@ class BinanceTrader():
         # Trade details
         self.trade_data_mongodb = None
         self.trade_data = None
-              
+    
+
+    # def sync_to_binance_server_time_win(self):
+    #     """Sync server time on windows machine.
+    #     """
+    #     import win32api
+        
+    #     gt = self.client.get_server_time()
+    #     tt = time.gmtime(int((gt["serverTime"])/1000))
+    #     win32api.SetSystemTime(tt[0],tt[1],0,tt[2],tt[3],tt[4],tt[5],0)      
+        
         
     def start_streaming(self) -> None:
         
@@ -94,7 +108,7 @@ class BinanceTrader():
         
         if self.bar_length in self.available_intervals:
             
-            os.system('w32tm/resync')  
+            #os.system('w32tm/resync')  
             
             #https://python-binance.readthedocs.io/en/latest/websockets.html
             self.twm.start_kline_socket(callback = self.handle_socket_message,
@@ -301,7 +315,8 @@ class BinanceTrader():
                     or (current_timestamp.second == 1))
                     
         if resync_time:
-            os.system('w32tm/resync')       
+            #os.system('w32tm/resync')  
+            pass     
                     
         if log_info:
             
@@ -667,7 +682,7 @@ class BinanceTrader():
             self.start_streaming()
             
             # Wait for streaming to start
-            time.sleep(5) 
+            time.sleep(10) 
             
             info = """\nTRADING LOG for {}
             | Binance Test Net 
@@ -705,6 +720,7 @@ class BinanceTrader():
                 self.logger.error(e)
                 substring = 'Timestamp for this request is outside of the recvWindow.'
                 if substring in f"{e}":
-                    os.system('w32tm/resync')  
+                    pass
+                    #os.system('w32tm/resync')  
         
                 self.twm.stop()

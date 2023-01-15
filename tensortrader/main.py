@@ -26,6 +26,8 @@ def main(symbol):
     # 2023-01-04 02:18:36 AM APIError(code=-1021): Timestamp for this request is outside of the recvWindow. 
     
     #https://stackoverflow.com/questions/61971027/how-to-change-binance-server-time-using-python#:~:text=Start%20%2D%3E%20search%20date%20and%20time,clock%2C%20and%20press%20Sync%20now.
+    # Possible Solution: https://stackoverflow.com/questions/54383176/error-timestamp-for-this-request-is-outside-of-revcwindow
+    # GitHub Issue: https://github.com/sammchardy/python-binance/issues/69
     
     # (3)
     # Task exception was never retrieved
