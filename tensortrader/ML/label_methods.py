@@ -1,33 +1,34 @@
+import os
+from datetime import datetime
+
 import numpy as np
 import pandas as pd
-from datetime import datetime
-from joblib import Parallel, delayed
-import os
 import pandas_ta as ta
+from joblib import Parallel, delayed
 
 from tensortrader.utils.utils import *
 
 
 class TechnicalSignal():
-  """Calculate trading signal based on a 
+  """Calculate trading signal based on a
   technical indicator using the pandas_ta
   libraray.
   """
-  def __init__(self,  
+  def __init__(self,
               technical_indicator: str) -> None:
     self.technical_indicator = technical_indicator
     self.signal_strategy = []
 
 
-  def run(self, 
-          data: pd.DataFrame, 
+  def run(self,
+          data: pd.DataFrame,
           **kwargs) -> pd.DataFrame:
-    
+
     strategy_params = {}
     for key , value in kwargs.items():
         strategy_params[key] = value
 
-    self.define_signal_strategy(**strategy_params) 
+    self.define_signal_strategy(**strategy_params)
 
     data = self.calculate_technical_indicator(data).copy()
 
@@ -40,9 +41,9 @@ class TechnicalSignal():
       # When crossing from negative to positive --> buy
       # wehn crossing from positive to negaive --> sell
 
-      # some logic 
+      # some logic
 
-      return df 
+      return df
     elif self.technical_indicator == 'macd_os':
       # some logic
 
@@ -58,22 +59,22 @@ class TechnicalSignal():
         strategy_params[key] = value
 
     if self.technical_indicator == 'awesome_os':
-      self.signal_strategy = [{'kind': 'ao', 
-              'fast' : strategy_params.get('fast', 5), 
-              'slow': strategy_params.get('slow', 34), 
+      self.signal_strategy = [{'kind': 'ao',
+              'fast' : strategy_params.get('fast', 5),
+              'slow': strategy_params.get('slow', 34),
               'offset': strategy_params.get('offset', 1)}]
     elif self.technical_indicator == 'macd_os':
-      self.signal_strategy = [{'kind': 'ao', 
-              'fast' : strategy_params.get('fast', 12), 
-              'slow': strategy_params.get('slow', 26), 
-              'signal': strategy_params.get('signal', 9), 
+      self.signal_strategy = [{'kind': 'ao',
+              'fast' : strategy_params.get('fast', 12),
+              'slow': strategy_params.get('slow', 26),
+              'signal': strategy_params.get('signal', 9),
               'offset': strategy_params.get('offset', 1)}]
     else:
       ValueError(f"Stragey {self.technical_indicator} is not available")
 
 
   def calculate_technical_indicator(self,
-                      data: pd.DataFrame, 
+                      data: pd.DataFrame,
                       ):
     """Function to calculate technical indicators
 
@@ -110,33 +111,33 @@ class TechnicalSignal():
 
 
 class ReturnSignal():
-  """Calculate a signal based on the 
-  return of the Close Price of a given Ticker. 
+  """Calculate a signal based on the
+  return of the Close Price of a given Ticker.
 
   It calculates the lag return using the following
-  formula . Given to prices P(t) and P(t+n), 
-  the normalized nth return 
+  formula . Given to prices P(t) and P(t+n),
+  the normalized nth return
   r_nth(t+n) is:
 
   r_nth(t+n) = ((P(t+n)/P(t)) - 1)**(1/n)  - 1
 
-  Then the return value is shifted to the 
+  Then the return value is shifted to the
   t-th position. Using pd.Series.shift(-n)
-  For which then any ML Regression problem can 
-  be trained on. 
+  For which then any ML Regression problem can
+  be trained on.
   """
 
-  def __init__(self, 
+  def __init__(self,
           return_lag: list,
           target_col_name: list,
           long_short : list,
           data : pd.DataFrame,
           timestamp_col: str,
-          variable: str, 
+          variable: str,
           span_volatility: int,
-          outlier_cutoff: float, 
+          outlier_cutoff: float,
           return_type: str) -> None:
-    """Contructor. 
+    """Contructor.
 
     Args:
         return_lags (list): list of return lags
@@ -174,27 +175,27 @@ class ReturnSignal():
         print("Calculating returns for ticker", ticker)
 
         _df = self.data[self.data['Ticker'] == ticker].copy()
-        _df = self.calculate_returns(_df, 
-                                    self.variable, 
-                                    self.return_lag, 
-                                    self.timestamp_col, 
+        _df = self.calculate_returns(_df,
+                                    self.variable,
+                                    self.return_lag,
+                                    self.timestamp_col,
                                     self.target_col_name,
-                                    self.outlier_cutoff, 
+                                    self.outlier_cutoff,
                                     self.return_type)
 
         _df =  _df.assign(threshold = self.calculate_volatility(_df))
 
         _df =  _df.assign(label = self.calculate_signals(_df, self.long_short))
-        
+
         dfs.append(_df)
 
     return pd.concat(dfs, ignore_index=True)
 
-  def calculate_signals(self, df : pd.DataFrame, 
+  def calculate_signals(self, df : pd.DataFrame,
                         long_short : list) -> pd.Series:
     """Calculate trading signals
     1: long
-    0: netural 
+    0: netural
     -1: short
 
     Args:
@@ -212,13 +213,13 @@ class ReturnSignal():
 
     signals = np.where(df[self.target_col_name] > df['threshold']*long , 1 , 0)
     signals = np.where(df[self.target_col_name] < df['threshold']*short, -1 , signals)
-    
+
     return signals
-    
+
 
   def calculate_volatility(self, df):
     """Calculate volatility using
-    exponentially weighted standard deviation. 
+    exponentially weighted standard deviation.
 
     Returns:
         pd.Series: ewm Standard deviation
@@ -235,14 +236,14 @@ class ReturnSignal():
 
 
   def calculate_returns(self,
-                      data: pd.DataFrame, 
-                      variable: str, 
-                      return_lag: list, 
-                      timestamp_col : str, 
+                      data: pd.DataFrame,
+                      variable: str,
+                      return_lag: list,
+                      timestamp_col : str,
                       target_col_name: list,
-                      outlier_cutoff : float, 
+                      outlier_cutoff : float,
                       return_type: str) -> pd.DataFrame:
-    """Calculate returns base on a target variable, 
+    """Calculate returns base on a target variable,
     and append ML regression target variable to the
     right order in the OHLC dataframe.
 
@@ -250,14 +251,14 @@ class ReturnSignal():
         data (pd.DataFrame): data containing ticker information
         variable (str): target variable to calculate returns for
         return_lag (list): list of lags
-        date_col (str, optional): Column holding ticker timestamps. 
+        date_col (str, optional): Column holding ticker timestamps.
         target_col_name (list): list of target column names
         outlier_cutoff (float, optional): outlier cutoff.
 
     Returns:
         pd.DataFrame: Dataframe containing returns features
     """
-    
+
     if return_type == 'simple':
       returns = (data.set_index([timestamp_col])[variable]
                 .sort_index() # Sort by Date
@@ -268,7 +269,7 @@ class ReturnSignal():
                 .pow(1/return_lag) # apply n root for n = lag
                 .sub(1) #substract 1
                 .shift(-return_lag) # Shift Target variable to current candle --> To allow ML Regression Training
-                .to_frame(target_col_name)  )          
+                .to_frame(target_col_name)  )
     elif return_type =='log':
       returns = (data.set_index([timestamp_col])[variable]
                 .sort_index() # Sort by Date
@@ -280,7 +281,7 @@ class ReturnSignal():
                 .pow(1/return_lag) # apply n root for n = lag
                 .sub(1) #substract 1
                 .shift(-return_lag) # Shift Target variable to current candle --> To allow ML Regression Training
-                .to_frame(target_col_name)  )  
+                .to_frame(target_col_name)  )
 
 
 
@@ -300,12 +301,12 @@ class TripleBarrierMethod():
     reference for selection of targeted horizontal
     barriers.
 
-    Excepted input is pandas dataframe with 
+    Excepted input is pandas dataframe with
     candle bars data of the form
-    OHLC. Index are timestamps. 
+    OHLC. Index are timestamps.
 
-    Run method generates a Dataframe containing 
-    the a label for every row (candle bar). 
+    Run method generates a Dataframe containing
+    the a label for every row (candle bar).
 
     1: Profitable trade
     0: No loss no gain
@@ -315,11 +316,11 @@ class TripleBarrierMethod():
   """
 
 
-  def __init__(self, data, ticker, ptsl, delta_vertical_b, pt, 
-                  delta_volatility = pd.Timedelta(hours=1), 
-                  span_volatility = 100, 
+  def __init__(self, data, ticker, ptsl, delta_vertical_b, pt,
+                  delta_volatility = pd.Timedelta(hours=1),
+                  span_volatility = 100,
                   n_jobs = 7,
-                  parallel_calculation = True, 
+                  parallel_calculation = True,
                   max_nbytes = '1M',
                   verbose = 0):
     """Intializer method
@@ -328,14 +329,14 @@ class TripleBarrierMethod():
         data (pd.DataFrame): dataframe of the form OHLC.
         ticker (str): ticker
         ptsl (list): Profit-Stop Loss ratio [profit, stop]
-        delta_vertical_b (pd.Timedelta): Trade holding time. 
+        delta_vertical_b (pd.Timedelta): Trade holding time.
         pt (int): Position Type. 1: Long. -1: Short
-        delta_volatility (pd.Timedelta, optional): delta for volatility calculation. 
+        delta_volatility (pd.Timedelta, optional): delta for volatility calculation.
                                                     Defaults to pd.Timedelta(hours=1).
         span_volatility (int, optional): Specify decay in terms of span. Defaults to 100.
         n_jobs (int, optional): number of parallel jobs
-        parallel_calculation (bool, optional) = True, 
-        max_nbytes (str, optional): Threshold on the size of arrays passed to 
+        parallel_calculation (bool, optional) = True,
+        max_nbytes (str, optional): Threshold on the size of arrays passed to
           the workers that triggers automated memory mapping in temp_folder
     """
 
@@ -360,13 +361,13 @@ class TripleBarrierMethod():
   def h_barriers(self):
     return self._h_barriers
 
- 
+
   def run(self):
-    """Run strategy label calculation. 
+    """Run strategy label calculation.
 
     Returns:
         pd.DataFrame: Dataframe containing the TBM label
-                      for every row (candle bar). 
+                      for every row (candle bar).
     """
 
 
@@ -380,7 +381,7 @@ class TripleBarrierMethod():
     events = self._data[['t1', 'threshold']].copy()
 
     # Add side
-    events = events.assign(side=pd.Series(self.pt , events.index)) 
+    events = events.assign(side=pd.Series(self.pt , events.index))
 
     # Get horizontal barriers (Target profil and stop loss)
     self._h_barriers = self.calculate_h_barriers(events)
@@ -403,8 +404,8 @@ class TripleBarrierMethod():
 
   def calculate_volatility(self):
       """Calculate volatility using
-      exponentially weighted standard deviation. 
- 
+      exponentially weighted standard deviation.
+
       Returns:
           pd.Series: ewm Standard deviation
       """
@@ -422,7 +423,7 @@ class TripleBarrierMethod():
       df0 = pd.Series(close.index[df0-1], index = close.index[close.shape[0]-df0.shape[0]:])
 
       # 1.3 get values by timestamps, then compute returns
-      df0 = close.loc[df0.index]/close.loc[df0.values].values - 1 
+      df0 = close.loc[df0.index]/close.loc[df0.values].values - 1
 
       # 2. estimate rolling standard deviation
       df0 = df0.ewm(span =  self.span_volatility).std()
@@ -452,7 +453,7 @@ class TripleBarrierMethod():
           t1: timestamp of the next horizon
           threshold: unit height of top and bottom barriers
           side: the side of each bet
-          factors: multipliers of the threshold to set the height of 
+          factors: multipliers of the threshold to set the height of
                   top/bottom barriers
 
     Returns:
@@ -460,21 +461,21 @@ class TripleBarrierMethod():
                       barriers
     """
 
-    if self.ptsl[0] > 0: 
+    if self.ptsl[0] > 0:
       thresh_uppr = self.ptsl[0] * events['threshold']
-    else: 
+    else:
       thresh_uppr = pd.Series(index=events.index) # no uppr thresh
 
-    if self.ptsl[1] > 0: 
+    if self.ptsl[1] > 0:
       thresh_lwr = -self.ptsl[1] * events['threshold']
-    else: 
-      thresh_lwr = pd.Series(index=events.index)  # no lwr thresh  
+    else:
+      thresh_lwr = pd.Series(index=events.index)  # no lwr thresh
 
     return pd.DataFrame({'thresh_uppr':thresh_uppr,  \
                         'thresh_lwr':thresh_lwr},  \
                         index=events.index)
 
-     
+
 
   def calculate_touches(self, events):
     '''
@@ -482,12 +483,12 @@ class TripleBarrierMethod():
       t1: timestamp of the next horizon
       threshold: unit height of top and bottom barriers
       side: the side of each bet
-      factors: multipliers of the threshold to set the height of 
+      factors: multipliers of the threshold to set the height of
               top/bottom barriers
 
     Returns:
-          pd.Series: time of earliest profit or stop loss 
-    '''  
+          pd.Series: time of earliest profit or stop loss
+    '''
     print("Getting touches")
 
     thresh_lwr = self._h_barriers['thresh_lwr'].copy()
@@ -511,12 +512,12 @@ class TripleBarrierMethod():
       t1: timestamp of the next horizon
       threshold: unit height of top and bottom barriers
       side: the side of each bet
-      factors: multipliers of the threshold to set the height of 
+      factors: multipliers of the threshold to set the height of
               top/bottom barriers
 
     Returns:
-          pd.Series: time of earliest profit or stop loss 
-    '''  
+          pd.Series: time of earliest profit or stop loss
+    '''
     print("Getting touches")
 
     thresh_lwr = self._h_barriers['thresh_lwr'].copy()
@@ -530,7 +531,7 @@ class TripleBarrierMethod():
       Args:
           Close (pd.Series): Close prices
           events (pd.DataFrame): events data frame
-          loc (datetime.datetime): candle timestamp 
+          loc (datetime.datetime): candle timestamp
           t1 (datetime.datetime): candle timestamp + horizotal barrier offset
 
       Returns:
@@ -538,7 +539,7 @@ class TripleBarrierMethod():
       """
 
       out = events.loc[[loc]].filter(['t1'])
-      
+
       df0 = Close[loc:t1]                              # path prices
       df0 = (df0 / Close[loc] - 1) * events.side[loc]  # path returns
 
@@ -558,8 +559,8 @@ class TripleBarrierMethod():
     """Assign TBM Labels
 
     Args:
-        touches (pd.DataFrame): dataframe containing the 
-            time of earliest profit or stop loss 
+        touches (pd.DataFrame): dataframe containing the
+            time of earliest profit or stop loss
 
     Returns:
         pd.DataFrame: dataframe containing the labels
@@ -572,7 +573,7 @@ class TripleBarrierMethod():
       #print(" ", loc, " ", t)
       if pd.isnull(t):
         out.loc[loc, 'label'] = 0
-      elif t == touches.loc[loc, 'stop_loss']: 
+      elif t == touches.loc[loc, 'stop_loss']:
         out.loc[loc, 'label'] = -1
       else:
         out.loc[loc, 'label'] = 1
@@ -582,8 +583,8 @@ class TripleBarrierMethod():
     """Assign TBM Labels
 
     Args:
-        touches (pd.DataFrame): dataframe containing the 
-            time of earliest profit or stop loss 
+        touches (pd.DataFrame): dataframe containing the
+            time of earliest profit or stop loss
 
     Returns:
         pd.DataFrame: dataframe containing the labels
@@ -600,8 +601,8 @@ class TripleBarrierMethod():
 
 
       Args:
-          touches (pd.DataFrame): dataframe containing the 
-            time of earliest profit or stop loss 
+          touches (pd.DataFrame): dataframe containing the
+            time of earliest profit or stop loss
           loc (datetime.datetime): candle bar timestamp
           t (datetime.datetime): time of touch
 
@@ -613,7 +614,7 @@ class TripleBarrierMethod():
 
       if pd.isnull(t):
         out.loc[loc, 'label'] = int(0)
-      elif t == touches.loc[loc, 'stop_loss']: 
+      elif t == touches.loc[loc, 'stop_loss']:
         out.loc[loc, 'label'] = int(-1)
       else:
         out.loc[loc, 'label'] = int(1)
@@ -624,7 +625,7 @@ class TripleBarrierMethod():
                       (touches, loc, t) for loc, t in first_touch.iteritems())
 
     return pd.concat(parallel_outputs)
-    
+
   def add_metalabel(self, y_model1):
     """Calculate Metalabels
 
@@ -641,7 +642,7 @@ class TripleBarrierMethod():
     """
 
     y_true = self._data['label']
-    
+
     bin_label = np.zeros_like(y_model1)
     for i in range(y_model1.shape[0]):
         if y_model1[i] != 0 and y_model1[i]*y_true[i] > 0:
@@ -670,5 +671,3 @@ class TripleBarrierMethod():
     print(output_storage)
 
     self._data.to_parquet(output_storage)
-
-

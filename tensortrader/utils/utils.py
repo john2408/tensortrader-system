@@ -1,9 +1,9 @@
-import pandas as pd
-import numpy as np
-import os
-import pytz
 import datetime
+import os
 
+import numpy as np
+import pandas as pd
+import pytz
 
 SYMBOLS = ['BNBUSDT', 'BNBBTC', 'BTCUSDT', 'EOSUSDT', 'ETCUSDT',
        'LTCUSDT', 'XMRBTC', 'TRXUSDT', 'XLMUSDT', 'ADAUSDT', 'IOTAUSDT',
@@ -29,7 +29,7 @@ def format_cols_to(df, cols, dtype = 'float64'):
 
 def reindex_by_date(df):
     """
-    Reindex Time Series. 
+    Reindex Time Series.
     """
     dates = range(df.index[0], df.index[-1]+60000,60000)
     return df.reindex(dates, method = 'pad')

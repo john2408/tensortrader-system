@@ -1,9 +1,10 @@
-import pandas as pd
+import time
+from pathlib import Path
+
 import numpy as np
+import pandas as pd
 import pandas_ta as ta
 import yaml
-from pathlib import Path
-import time
 from sklearn.preprocessing import StandardScaler
 
 
@@ -17,12 +18,12 @@ class FeatureEngineer():
         """
         self.feature_id = feature_id
         self.conf_path = conf_path
-    
+
     def read_conf(self):
         self.conf = yaml.safe_load(Path(self.conf_path).read_text())
 
-    def calculate_features(self, 
-                            data: pd.DataFrame, 
+    def calculate_features(self,
+                            data: pd.DataFrame,
                             calculate_metalabels: bool = False) -> pd.DataFrame:
         """Calculate Features
 
@@ -67,10 +68,10 @@ class FeatureEngineer():
             timestamp_col = 'Date'
             data = build_time_columns(data, timestamp_col, time_levels)
 
-            if features_conf['Time_Fourier_Features']:                    
-                data = build_fourier_time_features(data, 
-                                time_levels = ['month', 'day', 'hour', 'minute'], 
-                                max_levels = [12, 30, 24, 60], 
+            if features_conf['Time_Fourier_Features']:
+                data = build_fourier_time_features(data,
+                                time_levels = ['month', 'day', 'hour', 'minute'],
+                                max_levels = [12, 30, 24, 60],
                                 drop_columns = True)
 
         # (6) Volume Features
@@ -114,17 +115,17 @@ class FeatureEngineer():
 
         # Dop any NA value
         data = data.dropna()
-        
+
         return data
 
-    def feature_selection(self, 
-                            predictors_list: list, 
-                            X_train :pd.DataFrame, 
-                            y_train : np.ndarray,  
+    def feature_selection(self,
+                            predictors_list: list,
+                            X_train :pd.DataFrame,
+                            y_train : np.ndarray,
                             mode : str = "mean_decrease",
                             target_type: str = 'classification',
                             X_test : pd.DataFrame =  None,
-                            y_test : np.ndarray = None, 
+                            y_test : np.ndarray = None,
                              ) -> list:
         """Feature Selection using RandomForest Classifier
 
@@ -138,9 +139,9 @@ class FeatureEngineer():
         Returns:
             (list): list of feature sorted by their importance
         """
-    
+
         # Ref: https://scikit-learn.org/stable/auto_examples/ensemble/plot_forest_importances.html
-        
+
         from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
         from sklearn.inspection import permutation_importance
 
@@ -163,7 +164,7 @@ class FeatureEngineer():
 
         if mode == "permutation":
 
-            # TODO: Adjust permutation 
+            # TODO: Adjust permutation
             start_time = time.time()
             result = permutation_importance(
                 forest, X_test, y_test, n_repeats=10, random_state=42, n_jobs=2
@@ -181,13 +182,13 @@ class FeatureEngineer():
             importances = forest.feature_importances_
 
             feat_importances = pd.Series(importances, index=feature_names).sort_values(ascending = False)
-            
+
         return feat_importances
 
-    def train_test_split_multiple_ts(self, 
-                                df : pd.DataFrame, 
-                                predictors_list: str, 
-                                test_size: int = 0.7, 
+    def train_test_split_multiple_ts(self,
+                                df : pd.DataFrame,
+                                predictors_list: str,
+                                test_size: int = 0.7,
                                 target_variable: str = 'label') -> list:
         """Split into test and trainig dataset for multiple
         timeseries/tickers based on a given training size.
@@ -201,11 +202,11 @@ class FeatureEngineer():
         Returns:
             list: X_train, X_test, y_train, y_test
         """
-    
+
         if not 'index' in df.columns:
             df.reset_index(inplace = True)
 
-        
+
         n_entries_ticker = (df
                         .groupby('Ticker')
                         .agg({'index': [min, max]})
@@ -214,7 +215,7 @@ class FeatureEngineer():
         n_entries_ticker.columns = [f"{x[0]}_{x[1]}" for x in n_entries_ticker.columns]
 
         n_entries_ticker['start_test'] =  (np.ceil(n_entries_ticker['index_min'] +
-                                        + (n_entries_ticker['index_max'] 
+                                        + (n_entries_ticker['index_max']
                                         - n_entries_ticker['index_min'])*test_size )
                                           .astype(int))
 
@@ -228,31 +229,31 @@ class FeatureEngineer():
             indeces = indeces.astype(str) + "-" + ticker
 
             test_indices = pd.concat([test_indices, indeces])
-        
+
         # Set key
         df['key'] = df['index'].astype(str) + "-" + df['Ticker']
 
-        # set index 
+        # set index
         df = df.set_index(['Ticker', 'Date'])
-        
+
         X = df.filter(predictors_list + ['key']).copy()
         y = df.filter([target_variable] + ['key']).copy()
-        
+
         X_train = X[~X['key'].isin(test_indices.values)].drop(columns = ['key', 'index'])
         X_test = X[X['key'].isin(test_indices.values)].drop(columns = ['key', 'index'])
 
         y_train = y[~y['key'].isin(test_indices.values)][target_variable].values
         y_test = y[y['key'].isin(test_indices.values)][target_variable].values
-        
-            
+
+
         return X_train, X_test, y_train, y_test
 
-    def add_dummies(self, 
-                    data : pd.DataFrame, 
-                    cat_columns: str, 
+    def add_dummies(self,
+                    data : pd.DataFrame,
+                    cat_columns: str,
                     drop: bool = False) -> pd.DataFrame:
         """Convert categorical variabels using
-        one hot encoding. 
+        one hot encoding.
 
         Args:
             data (pd.DataFrame): whole dataset
@@ -266,18 +267,18 @@ class FeatureEngineer():
         """
 
         if drop:
-            return pd.concat([data.drop(columns = [cat_columns]), 
-                        pd.get_dummies(data[cat_columns])], 
+            return pd.concat([data.drop(columns = [cat_columns]),
+                        pd.get_dummies(data[cat_columns])],
                         axis = 1)
-        
-        return pd.concat([data, 
-                        pd.get_dummies(data[cat_columns])], 
+
+        return pd.concat([data,
+                        pd.get_dummies(data[cat_columns])],
                         axis = 1)
 
 
 
 def apply_standard_scaler(x):
-    """Apply Standard scaler on a column. 
+    """Apply Standard scaler on a column.
 
     Args:
         x (pd.Series): data
@@ -285,13 +286,13 @@ def apply_standard_scaler(x):
     Returns:
         np.array: stardardized variable
     """
-    
+
     vector_data = x.values.reshape(-1,1)
 
     scaler = StandardScaler()
     scaler.fit(vector_data)
     out = scaler.transform(vector_data)
-    
+
     return out.reshape(1,-1)[0]
 
 
@@ -311,7 +312,7 @@ def get_metalabels(y_model1, y_true):
           1: Take the trade
           0: ignore the trade
     """
-    
+
     bin_label = np.zeros_like(y_model1)
     for i in range(y_model1.shape[0]):
         if y_model1[i] != 0 and y_model1[i]*y_true[i] > 0:
@@ -348,7 +349,7 @@ def calculate_technical_indicators(data: pd.DataFrame, features_conf: dict, SYMB
 
     Args:
         data (pd.DataFrame): data containing ticker information
-        features_conf (dict): technical indicators configuration 
+        features_conf (dict): technical indicators configuration
         SYMBOLS (list): tickers list
 
     Returns:
@@ -388,7 +389,7 @@ def calculate_lag_features(data: pd.DataFrame, features_conf: dict, SYMBOLS: lis
 
     Args:
         data (pd.DataFrame): data containing ticker information
-        features_conf (dict): technical indicators configuration 
+        features_conf (dict): technical indicators configuration
         SYMBOLS (list): tickers list
 
     Returns:
@@ -418,17 +419,17 @@ def calculate_lag_features(data: pd.DataFrame, features_conf: dict, SYMBOLS: lis
 
                     _df.loc[:,columns_name] = _df[ref_variable].shift(lag)
 
-                    lags_features.append(columns_name) 
+                    lags_features.append(columns_name)
 
         dfs.append(_df)
 
     return pd.concat(dfs, ignore_index=True)
 
-    
-def calculate_returns(data: pd.DataFrame, variable: str, 
-                    lags: list, binary_lags: bool, date_col : str = 'Date', 
+
+def calculate_returns(data: pd.DataFrame, variable: str,
+                    lags: list, binary_lags: bool, date_col : str = 'Date',
                     outlier_cutoff : float = 0.01):
-    """Calculate returns base on a target variable. 
+    """Calculate returns base on a target variable.
 
     Args:
         data (pd.DataFrame): data containing ticker information
@@ -456,7 +457,7 @@ def calculate_returns(data: pd.DataFrame, variable: str,
                         .sub(1) #substract 1
                         .apply(lambda x: 1 if x > 0 else 0)
                         .to_frame(f'{variable}_return_{lag}m')
-                        
+
                         )
 
         else:
@@ -469,24 +470,24 @@ def calculate_returns(data: pd.DataFrame, variable: str,
                     .pow(1/lag) # apply n root for n = lag
                     .sub(1) #substract 1
                     .to_frame(f'{variable}_return_{lag}m')
-                    
+
                 )
 
     returns.append(_return)
-        
+
     returns = pd.concat(returns, axis = 1)
     data = data.set_index([date_col]).join(returns).dropna()
     data.reset_index(inplace = True)
 
     return data
 
-def calculate_returns_per_ticker(data: pd.DataFrame, features_conf: dict, 
+def calculate_returns_per_ticker(data: pd.DataFrame, features_conf: dict,
                                 SYMBOLS: list, date_col: str = 'Date'):
     """Function to calculate lag features
 
     Args:
         data (pd.DataFrame): data containing ticker information
-        features_conf (dict): technical indicators configuration 
+        features_conf (dict): technical indicators configuration
         SYMBOLS (list): tickers list
         date_col (str, optional): Column holding ticker timestamps. Defaults to 'Date'.
 
@@ -504,10 +505,10 @@ def calculate_returns_per_ticker(data: pd.DataFrame, features_conf: dict,
         _df = data[data['Ticker'] == ticker].copy()
 
         outlier_cutoff = 0.01
-        lags = features_conf['return_lags'] 
-        binary_lags = features_conf['binary_lags'] 
-        variable = features_conf['return_lags_variable'] 
-        
+        lags = features_conf['return_lags']
+        binary_lags = features_conf['binary_lags']
+        variable = features_conf['return_lags_variable']
+
 
         _df = calculate_returns(_df, variable, lags, binary_lags, date_col, outlier_cutoff)
 
@@ -521,13 +522,13 @@ def calculate_momemtum_features(data: pd.DataFrame, features_conf: dict, SYMBOLS
 
     Args:s
         data (pd.DataFrame): data containing ticker information
-        features_conf (dict): technical indicators configuration 
+        features_conf (dict): technical indicators configuration
         SYMBOLS (list): tickers list
 
     Returns:
         pd.DataFrame: df containig lag features
     """
-    
+
     dfs = []
 
     for ticker in SYMBOLS:
@@ -537,7 +538,7 @@ def calculate_momemtum_features(data: pd.DataFrame, features_conf: dict, SYMBOLS
         _df = data[data['Ticker'] == ticker].copy()
 
 
-        lags = features_conf['return_lags'] 
+        lags = features_conf['return_lags']
         variable = features_conf['return_lags_variable']
 
         for lag in lags:
@@ -548,14 +549,14 @@ def calculate_momemtum_features(data: pd.DataFrame, features_conf: dict, SYMBOLS
                 print('momentum_{}_{}'.format( lags[1], lag))
                 _df['momentum_{}_{}'.format( lags[1], lag)] = data[f'{variable}_return_{lag}m'].sub(data['{}_return_{}m'.format(variable, lags[1])])
 
-    
+
         dfs.append(_df)
 
     return pd.concat(dfs, ignore_index=True)
 
 
-def calculate_volume_features(data: pd.DataFrame, 
-                            group_level: list, 
+def calculate_volume_features(data: pd.DataFrame,
+                            group_level: list,
                             features_conf: dict):
     """Function to calculate Volume Features
 
@@ -568,45 +569,45 @@ def calculate_volume_features(data: pd.DataFrame,
         pd.DataFrame: df containig volume features
     """
 
-    
+
     short = features_conf['Volume_Windows'][0]
     long = features_conf['Volume_Windows'][1]
-    target_variable = features_conf['Volume_Col'] 
+    target_variable = features_conf['Volume_Col']
 
     drop_columns = []
 
     variables = ['sma', 'std']
 
-    data = calculate_rolling_features(data, group_level, 
-                                        target_variable, short, long, 
-                                        variables, drop_columns, 
+    data = calculate_rolling_features(data, group_level,
+                                        target_variable, short, long,
+                                        variables, drop_columns,
                                         drop_target_variable = False )
 
-    
+
     return data
 
-    
+
 
 def calculate_rolling_features(df: pd.DataFrame,
                             group_level: list,
-                            target_variable: str, 
-                            short: int, 
-                            long: int, 
-                            variables = [], 
+                            target_variable: str,
+                            short: int,
+                            long: int,
+                            variables = [],
                             drop_columns = [],
                             drop_target_variable = True):
-    """Function to calculate rolling feature for a target variable in 
-    a data frame. 
-    
+    """Function to calculate rolling feature for a target variable in
+    a data frame.
+
     Args:
         df (pandas.Dataframe): df input data frame
         target_variable (str): df containing the training samples
         short (int): short window
-        long (int): long short 
+        long (int): long short
         variables (list): 'sma', 'std', 'bbands' and 'cv'
         drop_columns (list): columns to drop
         drop_target_variable (bool): whether to drop the target variable
-    
+
     Returns:
         pandas.Dataframe: original data frame containing the calculated features
     """
@@ -614,52 +615,52 @@ def calculate_rolling_features(df: pd.DataFrame,
     if 'sma' in variables:
         df[f'{target_variable}_sma_{short}'] = df.groupby(group_level)[target_variable].transform(lambda x: x.rolling(window = short).mean())
         df[f'{target_variable}_sma_{long}'] = df.groupby(group_level)[target_variable].transform(lambda x: x.rolling(window = long).mean())
-    
+
     if 'std' in variables:
         df[f'{target_variable}_std_{short}'] = df.groupby(group_level)[target_variable].transform(lambda x: x.rolling(window = short).std())
         df[f'{target_variable}_std_{long}'] = df.groupby(group_level)[target_variable].transform(lambda x: x.rolling(window = long).std())
 
     if 'cv' in variables:
         if 'sma' and 'std' in variables:
-            df[f'{target_variable}_cv_{short}'] = (df[f'{target_variable}_std_{short}'] 
-                                                    / df[f'{target_variable}_sma_{short}'] ) 
-            df[f'{target_variable}_cv_{long}'] = (df[f'{target_variable}_std_{long}'] 
-                                                    / df[f'{target_variable}_sma_{long}']) 
+            df[f'{target_variable}_cv_{short}'] = (df[f'{target_variable}_std_{short}']
+                                                    / df[f'{target_variable}_sma_{short}'] )
+            df[f'{target_variable}_cv_{long}'] = (df[f'{target_variable}_std_{long}']
+                                                    / df[f'{target_variable}_sma_{long}'])
         else:
             ValueError("Please include sma and std for calculation of cv")
-    
+
     if 'bbands' in variables:
-        if 'sma' and 'std' in variables: 
-            df[f'{target_variable}_bblow_{short}'] = (df[f'{target_variable}_sma_{short}'] + 1.5 * 
+        if 'sma' and 'std' in variables:
+            df[f'{target_variable}_bblow_{short}'] = (df[f'{target_variable}_sma_{short}'] + 1.5 *
                                                     df[f'{target_variable}_std_{short}'])
-            df[f'{target_variable}_bblow_{long}'] = (df[f'{target_variable}_sma_{long}'] + 1.5 * 
+            df[f'{target_variable}_bblow_{long}'] = (df[f'{target_variable}_sma_{long}'] + 1.5 *
                                                     df[f'{target_variable}_std_{long}'])
 
-            df[f'{target_variable}_bbhigh_{short}'] = (df[f'{target_variable}_sma_{short}'] + 2 * 
+            df[f'{target_variable}_bbhigh_{short}'] = (df[f'{target_variable}_sma_{short}'] + 2 *
                                                     df[f'{target_variable}_std_{short}'])
-            df[f'{target_variable}_bbhigh_{long}'] = (df[f'{target_variable}_sma_{long}'] + 2 * 
+            df[f'{target_variable}_bbhigh_{long}'] = (df[f'{target_variable}_sma_{long}'] + 2 *
                                                     df[f'{target_variable}_std_{long}'])
         else:
             ValueError("Please include sma and std for calculation of cv")
-    
+
     if drop_columns:
         df.drop(columns = drop_columns, inplace = True)
-    
-    if drop_target_variable: 
+
+    if drop_target_variable:
         df.drop(columns = [target_variable], inplace = True)
 
-    
-    return df   
 
-def calculate_prob_distribution_features(data: pd.DataFrame, 
+    return df
+
+def calculate_prob_distribution_features(data: pd.DataFrame,
                                         target_variable: str,
-                                        short : int = 5, 
-                                        long : int = 10, 
+                                        short : int = 5,
+                                        long : int = 10,
                                         ):
     """Function daily probability of riksk and target entry
-    
+
     Args:
-        
+
     """
 
     daily_distribution = (data.groupby(['Date'])[target_variable]
@@ -672,36 +673,36 @@ def calculate_prob_distribution_features(data: pd.DataFrame,
 
     daily_distribution['distribution'] = np.round( daily_distribution['counts'] / daily_distribution['daily_sum'] , 4)
 
-    
+
 
     daily_distribution[f'{target_variable}_sma_{short}'] = (daily_distribution.groupby([target_variable])
                                                     ['distribution']
-                                                    .transform(lambda x : 
+                                                    .transform(lambda x :
                                                     x.rolling(window = short, closed = 'left')
                                                     .mean().fillna(method = 'backfill')))
 
     daily_distribution[f'{target_variable}_sma_{long}'] = (daily_distribution.groupby([target_variable])
                                                     ['distribution']
-                                                    .transform(lambda x : 
+                                                    .transform(lambda x :
                                                     x.rolling(window = long, closed = 'left')
                                                     .mean().fillna(method = 'backfill')))
 
     daily_distribution[f'{target_variable}_std_{short}'] = (daily_distribution.groupby([target_variable])
                                                     ['distribution']
-                                                    .transform(lambda x : 
+                                                    .transform(lambda x :
                                                     x.rolling(window = short, closed = 'left')
                                                     .std().fillna(method = 'backfill')))
 
     daily_distribution[f'{target_variable}_std_{long}'] = (daily_distribution.groupby([target_variable])
                                                     ['distribution']
-                                                    .transform(lambda x : 
+                                                    .transform(lambda x :
                                                     x.rolling(window = long, closed = 'left')
                                                     .std().fillna(method = 'backfill')))
     # Coefficient of variation
-    daily_distribution[f'{target_variable}_cv_{short}'] = (daily_distribution[f'{target_variable}_std_{short}'] 
+    daily_distribution[f'{target_variable}_cv_{short}'] = (daily_distribution[f'{target_variable}_std_{short}']
                                                             / daily_distribution[f'{target_variable}_sma_{short}'])
-                                                            
-    daily_distribution[f'{target_variable}_cv_{long}'] = (daily_distribution[f'{target_variable}_std_{long}'] 
+
+    daily_distribution[f'{target_variable}_cv_{long}'] = (daily_distribution[f'{target_variable}_std_{long}']
                                                         / daily_distribution[f'{target_variable}_sma_{long}'])
 
     if target_variable == 'entry_type':
@@ -711,7 +712,7 @@ def calculate_prob_distribution_features(data: pd.DataFrame,
 
     return daily_distribution
 
-def build_time_columns(df : pd.DataFrame, 
+def build_time_columns(df : pd.DataFrame,
                         timestamp_col : str = 'Date',
                         time_levels: list =  ['month', 'day', 'hour', 'minute']):
     """_summary_
@@ -740,9 +741,9 @@ def build_time_columns(df : pd.DataFrame,
     return df
 
 
-def build_fourier_time_features(df : pd.DataFrame, 
-                                time_levels: list, 
-                                max_levels: list, 
+def build_fourier_time_features(df : pd.DataFrame,
+                                time_levels: list,
+                                max_levels: list,
                                 drop_columns = False):
     """_summary_
 
@@ -757,16 +758,16 @@ def build_fourier_time_features(df : pd.DataFrame,
     """
 
     for time_level, max_level in zip(time_levels, max_levels):
-        
+
         df.loc[:,time_level] = df[time_level].astype('float64')
-        
+
         df.loc[:,f"{time_level}_sin"] = df[time_level].apply(
                                     lambda x: np.sin( 2 * np.pi + x/max_level))
-                                    
+
         df.loc[:,f"{time_level}_cos"] = df[time_level].apply(
                                     lambda x: np.cos( 2 * np.pi + x/max_level))
 
-    if drop_columns: 
+    if drop_columns:
         df.drop(columns = time_levels, inplace = True)
 
-    return df 
+    return df

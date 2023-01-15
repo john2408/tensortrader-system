@@ -1,5 +1,6 @@
+import os
+
 from pyspark.sql import SparkSession
-import os 
 
 input_folder = '../../data'
 

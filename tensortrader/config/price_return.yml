@@ -13,10 +13,9 @@ imbalance_classes_mode : "class_weights" #  class_weights or oversampling
 # (1) label_mode: return (return_type = return p(t+1)/p(t)) & target_type: regression
 # (2) label_mode: log_return (return_type = log(p(t+1)/p(t)) ) & target_type: regression
 # (3) label_mode: Triple Barrier Method & target_type: classification
-label_mode : 'return' 
+label_mode : 'return'
 return_type : 'simple' # simple / log
-target_type : 'regression' 
-return_lag : 1 # for return reference calculation 
+target_type : 'regression'
 
 
 # -----------------------------
@@ -28,10 +27,10 @@ resampling : '15Min'
 # -----------------------------
 # Return Signals Parameters
 # -----------------------------
-return_lag : 1
+return_lag : 1 # for return reference calculation
 long_short : [3,1]
 timestamp_col : 'Date'
-variable : 'Close' 
+variable : 'Close'
 
 # -----------------------------
 # Triple Barrier Parameters
@@ -58,4 +57,3 @@ parallel_calculation : False
 span_volatility : 30
 volatility_freq : 1 # In minutes/ or candle bar frequency
 outlier_cutoff : 0.01
-

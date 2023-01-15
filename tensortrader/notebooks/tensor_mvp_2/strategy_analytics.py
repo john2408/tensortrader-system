@@ -1,5 +1,5 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 
 def get_trades(data, close_column, signal_column):
@@ -13,15 +13,15 @@ def get_trades(data, close_column, signal_column):
 
         new_position = data.loc[i, signal_column]
 
-        if new_position != current_position:    
+        if new_position != current_position:
 
-            if entry_time != '':                   
+            if entry_time != '':
                 entry_price = data.loc[entry_time, close_column]
                 exit_time = i
                 exit_price = data.loc[exit_time, close_column]
                 trade_details = pd.DataFrame([(current_position,entry_time, entry_price, exit_time,exit_price)])
-                trades = trades.append(trade_details,ignore_index=True)  
-                entry_time = ''            
+                trades = trades.append(trade_details,ignore_index=True)
+                entry_time = ''
 
             if new_position != 0:
                 entry_time = i
@@ -43,7 +43,7 @@ def get_analytics(trades):
     analytics['num_of_short'] = len(trades.loc[trades.Position==-1])
     # Total number of trades
     analytics['total_trades'] = analytics.num_of_long + analytics.num_of_short
-    
+
     # Gross Profit
     analytics['gross_profit'] = trades.loc[trades.PnL>0].PnL.sum()
     # Gross Loss

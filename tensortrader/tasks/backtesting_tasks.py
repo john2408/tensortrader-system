@@ -1,23 +1,24 @@
-from pathlib import Path
-from pyexpat import model
-import yaml
 import logging
-from constants import *
+from datetime import datetime
+from pathlib import Path
 
+import yaml
+from constants import *
+from pyexpat import model
+
+from tensortrader.Backtesting.backtester import Backtester
+from tensortrader.ETL.ETL_func import *
+from tensortrader.Features.feature_generation import FeatureEngineer
+from tensortrader.ML.label_methods import *
+from tensortrader.ML.models import *
+from tensortrader.tasks.task_utils import create_logging
 
 # How to run:
 # linux: export PYTHONPATH="${PYTHONPATH}:/mnt/d/Tensor/tensortrader/tensortrader"
 # win: ---
 # cd /tensortrader/tasks/
-# python backtesting_tasks.py   
+# python backtesting_tasks.py
 
-from tensortrader.ETL.ETL_func import *
-from tensortrader.ML.label_methods import *
-from tensortrader.ML.models import *
-from tensortrader.Features.feature_generation import FeatureEngineer
-from tensortrader.Backtesting.backtester import Backtester
-from datetime import datetime
-from tensortrader.tasks.task_utils import create_logging
 
 
 def main(symbol):
@@ -26,7 +27,7 @@ def main(symbol):
     # Parameters
     # -------------------------------------------------
 
-    # TODO: 
+    # TODO:
 
     # --------------------
     # Priority 1
@@ -35,24 +36,24 @@ def main(symbol):
     # Create logging (done)
     # Export Charts to PDF File (done)
     # Model Storage (done)
-    # Run multiple combinations of models (done) 
+    # Run multiple combinations of models (done)
     # Adjust resampling for chandle stick --> 10 min, 5 min. (done)
     # Create Strategy based on Returns --> then also create labels from it (done)
     # Create XGBoost Regressor for Return Forecasting--> New Strategy (done)
     # Test models with resampling (5min, 10 min) (done)
-    # Create functionality for Backtesting for (done): 
+    # Create functionality for Backtesting for (done):
     #   (1) label_mode: return & target_type: regression
     #   (2) label_mode: return & target_type: classification
     #   (3) label_mode: TBM & target_type: classification
     # Adjust Information stored in logs (done)
-    
+
     # Create new full test for all coins with all functionallities
-        
+
     # Technical Strategies Pool
-    # Adjust Metalables Strategies 
-    # --> LSTM --> GNN = CTN + GN 
-    
-    
+    # Adjust Metalables Strategies
+    # --> LSTM --> GNN = CTN + GN
+
+
     # Adjust Multivariate Cross Validation for Oversampling Adjustment
 
     # --------------------
@@ -60,7 +61,7 @@ def main(symbol):
     # --------------------
     # Create Module for Feature Importance Analysis on binary classification --> https://stackoverflow.com/questions/65110798/feature-importance-in-a-binary-classification-and-extracting-shap-values-for-one
     # Add external features
-    
+
     # --------------------
     # Priority 3
     # --------------------
@@ -70,7 +71,7 @@ def main(symbol):
 
 
     CONF = yaml.safe_load(Path('../config/backtesting.yml').read_text())
-    
+
     # -----------------------------
     # Initial Parameters
     # -----------------------------
@@ -82,13 +83,13 @@ def main(symbol):
     calculate_feat_importance = CONF.get('calculate_feat_importance')
 
 
-    model_type = CONF.get('model_type') 
-    use_resampling = CONF.get('use_resampling') 
+    model_type = CONF.get('model_type')
+    use_resampling = CONF.get('use_resampling')
     resampling =  CONF.get('resampling')
     imbalance_classes_mode = CONF.get('imbalance_classes_mode')
-    
+
     # number of candles to considered for volatility
-    span_volatility = CONF.get('span_volatility') 
+    span_volatility = CONF.get('span_volatility')
     outlier_cutoff = CONF.get('outlier_cutoff')
 
     # Number of candles to hold a trade
@@ -101,7 +102,7 @@ def main(symbol):
     # -----------------------------
     # Logging Config
     # -----------------------------
-    current_date = datetime.now().strftime("%Y-%m-%d-%H-%M") 
+    current_date = datetime.now().strftime("%Y-%m-%d-%H-%M")
 
 
     backtesting_folder = os.path.join( Path(os.getcwd()).parents[0].parents[0],
@@ -150,9 +151,9 @@ def main(symbol):
         timestamp_col = CONF.get('timestamp_col')
         variable = CONF.get('variable')
         target_col_name = ("{}_target_return_{}m"
-                            .format(variable, 
+                            .format(variable,
                             int(resampling[:-3]) * return_lag))
-        
+
         if target_type == 'regression':
             target_variable = target_col_name
         elif target_type == 'classification':
@@ -171,17 +172,17 @@ def main(symbol):
     if label_mode == 'TBM':
         ptsl = CONF.get('ptsl')  # Profit-Stop Loss ratio
         pt = CONF.get('pt') # Position Type 1: Long, -1: Short
-        delta_vertical_b = pd.Timedelta(minutes = v_barrier_minutes) 
+        delta_vertical_b = pd.Timedelta(minutes = v_barrier_minutes)
 
         # Volatility Parameters
         volatility_freq = CONF.get('volatility_freq') # In minutes
         delta_volatility = pd.Timedelta(minutes = volatility_freq)
         target_variable = 'label'
 
-        
+
         # For parallel labels computing
-        parallel_calculation = CONF.get('parallel_calculation') 
-        n_jobs = CONF.get('n_jobs') 
+        parallel_calculation = CONF.get('parallel_calculation')
+        n_jobs = CONF.get('n_jobs')
         max_nbytes = CONF.get('max_nbytes')
 
         if model_type == 'XGB':
@@ -190,7 +191,7 @@ def main(symbol):
             objective = CONF.get('objective_class')
             grow_policy = CONF.get('grow_policy_class')
             booster = CONF.get('booster_class')
-    
+
     # -----------------------------
     # Feature Engineering
     # -----------------------------
@@ -212,12 +213,12 @@ def main(symbol):
     # -----------------------------
     n_splits = CONF.get('n_splits')
     n_iter = CONF.get('n_iter')
-    test_period_length = CONF.get('test_period_length') # minutes   
-    train_period_length = (None if 
-                CONF.get('train_period_length') == "None" 
-                else CONF.get('train_period_length') )                                                        
-    gap = CONF.get('gap') 
-    date_idx = CONF.get('date_idx') 
+    test_period_length = CONF.get('test_period_length') # minutes
+    train_period_length = (None if
+                CONF.get('train_period_length') == "None"
+                else CONF.get('train_period_length') )
+    gap = CONF.get('gap')
+    date_idx = CONF.get('date_idx')
     n_top_features = CONF.get('n_top_features')
     max_n_estimators = CONF.get('max_n_estimators')
     model_name = CONF.get('model_name')
@@ -263,10 +264,10 @@ def main(symbol):
                                 long_short = long_short,
                                 data = data,
                                 timestamp_col = timestamp_col,
-                                variable = variable, 
-                                span_volatility= span_volatility, 
+                                variable = variable,
+                                span_volatility= span_volatility,
                                 outlier_cutoff = outlier_cutoff)
-        
+
         data = R_Signals.run()
 
         # Add target Return column to be dropped before ML Training
@@ -285,9 +286,9 @@ def main(symbol):
         dfs = []
 
         for ticker in symbols:
-            
+
             print("Get TBM labels for ticker", ticker)
-            
+
             df = data[data['Ticker'] == ticker].copy()
             df = df.set_index('timestamp').copy()
 
@@ -306,7 +307,7 @@ def main(symbol):
             df = TBM_labels.data.copy()
             dfs.append(df)
             del df
-            
+
         data = pd.concat(dfs)
         del dfs
 
@@ -322,10 +323,10 @@ def main(symbol):
     Signals_Backtest = Backtester(logger)
 
     backtesting_df_TBM = Signals_Backtest.vectorize_backtesting(ds = data.copy(),
-                      modus =  'signal_validation', 
+                      modus =  'signal_validation',
                       backtesting_folder = backtesting_folder,
                       use_adj_strategy = True,
-                      v_barrier_minutes = v_barrier_minutes, 
+                      v_barrier_minutes = v_barrier_minutes,
                       trading_fee = trading_fee,
                       logger = logger)
 
@@ -333,9 +334,9 @@ def main(symbol):
     # 4. Feature Engineering
     # -------------------------------------------------
     logger.info(f"Calculating Features, using feature config number {feature_id}")
-    feature = FeatureEngineer(feature_id  = feature_id, 
+    feature = FeatureEngineer(feature_id  = feature_id,
                             conf_path = conf_path)
-    
+
     data = feature.calculate_features(data).copy()
 
     # -------------------------------------------------
@@ -355,16 +356,16 @@ def main(symbol):
 
     # Get columns available for prediction
     predictors_list = X_train.columns
-    
+
     if calculate_feat_importance:
 
         logger.info(f"Selecting top {n_top_features} features")
-        feat_importance = feature.feature_selection(predictors_list = predictors_list, 
-                                                X_train = X_train, 
-                                                y_train = y_train, 
-                                                mode = mode, 
+        feat_importance = feature.feature_selection(predictors_list = predictors_list,
+                                                X_train = X_train,
+                                                y_train = y_train,
+                                                mode = mode,
                                                 target_type = target_type)
-    
+
         feature_selected = list(feat_importance.index[:n_top_features])
     else:
         feature_selected = list(predictors_list)
@@ -372,82 +373,82 @@ def main(symbol):
     # -------------------------------------------------
     # 6. Model Training
     # -------------------------------------------------
-    
+
     logger.info(f"Training model using {model_type}")
     XGB_trainer = ML_trainer(train_length = train_period_length,
-            test_length = test_period_length, 
+            test_length = test_period_length,
             n_splits = n_splits,
-            gap = gap, 
+            gap = gap,
             date_idx = date_idx,
-            model_type =  model_type, 
+            model_type =  model_type,
             symbols = symbols)
 
     print(XGB_trainer)
     logger.info(f"{XGB_trainer}")
 
-    
-    report, y_pred = XGB_trainer.fit(X_train, 
-                                    X_test, 
-                                    y_train, 
+
+    report, y_pred = XGB_trainer.fit(X_train,
+                                    X_test,
+                                    y_train,
                                     y_test,
-                                    feature_selected, 
+                                    feature_selected,
                                     imbalance_classes_mode,
-                                    target_type = target_type,         
+                                    target_type = target_type,
                                     n_iter = n_iter,
-                                    max_n_estimators = max_n_estimators, 
-                                    eval_metric = eval_metric, 
-                                    objective = objective, 
-                                    grow_policy = grow_policy, 
+                                    max_n_estimators = max_n_estimators,
+                                    eval_metric = eval_metric,
+                                    objective = objective,
+                                    grow_policy = grow_policy,
                                     booster = booster)
 
     logger.info(f"Storing Model...")
-    XGB_trainer.store_model(model_name = model_name, 
+    XGB_trainer.store_model(model_name = model_name,
                             storage_folder = backtesting_folder)
 
 
     logger.info(f"Analizing model performance, {report}")
 
     # backtesting_df_ML = Signals_Backtest.vectorize_backtesting(ds = data.copy(),
-    #                   modus =  'ML_performance', 
+    #                   modus =  'ML_performance',
     #                   y_pred = y_pred,
-    #                   backtesting_folder = backtesting_folder, 
+    #                   backtesting_folder = backtesting_folder,
     #                   use_adj_strategy  = True,
-    #                   v_barrier_minutes = v_barrier_minutes, 
+    #                   v_barrier_minutes = v_barrier_minutes,
     #                   trading_fee = trading_fee)
 
     if target_type == 'regression':
-    
+
         df_signals = (pd.DataFrame(y_pred.rename(R_Signals.target_col_name))
                 .join(data.set_index('Date')
                 .filter(['threshold'])))
-        
+
         df_signals['label'] = R_Signals.calculate_signals(df_signals, long_short)
-        
+
         backtesting_df_ML = Signals_Backtest.vectorize_backtesting(ds = data.copy(),
-                            modus =  'ML_performance', 
+                            modus =  'ML_performance',
                             y_pred = df_signals['label'],
                             backtesting_folder = backtesting_folder,
                             use_adj_strategy  = True,
-                            v_barrier_minutes = v_barrier_minutes, 
+                            v_barrier_minutes = v_barrier_minutes,
                             trading_fee = trading_fee)
 
-        
-    else:    
+
+    else:
         backtesting_df_ML = Signals_Backtest.vectorize_backtesting(ds = data.copy(),
-                            modus =  'ML_performance', 
+                            modus =  'ML_performance',
                             y_pred = y_pred,
                             backtesting_folder = backtesting_folder,
                             use_adj_strategy  = True,
-                            v_barrier_minutes = v_barrier_minutes, 
+                            v_barrier_minutes = v_barrier_minutes,
                             trading_fee = trading_fee)
-    
+
     logger.info(f"Storing backtesting results")
 
-    Signals_Backtest.store_backtesting_results_parquet( 
+    Signals_Backtest.store_backtesting_results_parquet(
                                 backtesting_df =  backtesting_df_ML,
                                 file_name =  backtesting_file,
                                 storage_folder = backtesting_folder )
-    
+
 
 
 if __name__ == "__main__":
@@ -463,4 +464,3 @@ if __name__ == "__main__":
         print("Processing Backtesting for Symbol: ", symbol)
         main(symbol)
         print("\n\n")
-        

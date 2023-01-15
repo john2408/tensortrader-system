@@ -1,47 +1,47 @@
 Feature_Engineering:
     1:
-      ta: 
-        - 
+      ta:
+        -
           "kind": "sma"
           "length": 10
           "offset":  1 # since at the t the final close price is not available
-        - 
-          "kind": "sma" 
+        -
+          "kind": "sma"
           "length": 60
-          "offset":  1 
-        - 
-          "kind": "vwma" 
+          "offset":  1
+        -
+          "kind": "vwma"
           "length": 10
-          "offset":  1 
-        - 
-          "kind": "vwma" 
+          "offset":  1
+        -
+          "kind": "vwma"
           "length": 60
-          "offset":  1 
+          "offset":  1
         -
           "kind": "bbands"
           "length": 10
-          "offset":  1 
-        - 
+          "offset":  1
+        -
           "kind": "bbands"
           "length": 60
-          "offset":  1 
-        - 
+          "offset":  1
+        -
           "kind": "macd"
           "fast": 5
           "slow": 60
-          "offset":  1 
-        - 
-          "kind": "rsi" 
-          "length": 10 
-          "offset":  1 
-        - 
+          "offset":  1
+        -
+          "kind": "rsi"
+          "length": 10
+          "offset":  1
+        -
           "kind": "atr"
           "length": 10
-          "offset":  1 
-        - 
+          "offset":  1
+        -
           'kind': "pdist"
-          "offset":  1 
-      
+          "offset":  1
+
       'include_lags': False
       'lags': [1,3,5,15,30]
       'ref_variable_lags' : ["Close"]
@@ -50,7 +50,7 @@ Feature_Engineering:
       'Volume_Features': True
       'Volume_Col': 'Volume'
       'Volume_Windows': [5, 30]
-      'Volume_Returns': True 
+      'Volume_Returns': True
 
       'Volume_Returns_lags': [5, 15]
       'Volume_Returns_binary': False

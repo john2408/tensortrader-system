@@ -2,18 +2,20 @@
 # linux: export PYTHONPATH="${PYTHONPATH}:/mnt/d/Tensor/tensortrader-system"
 # win: ---
 # cd /tensortrader/tasks/
-# python price_return_calculation.py   
+# python price_return_calculation.py
 
+from datetime import datetime
+from pathlib import Path
+
+import yaml
+
+from tensortrader.constants import *
 # Import tensortrader functions
 from tensortrader.ETL.ETL_func import *
 from tensortrader.ML.label_methods import *
 from tensortrader.ML.models import *
 from tensortrader.tasks.task_utils import create_logging
-from tensortrader.constants import *
 
-from datetime import datetime
-from pathlib import Path
-import yaml
 
 def main():
 
@@ -21,7 +23,7 @@ def main():
     # Parameters
     # -------------------------------------------------
 
-    # TODO: 
+    # TODO:
     # (1) label_mode: return (simple return p(t+1)/p(t)) & target_type: regression (done)
     # (2) label_mode: log_return log(p(t+1)/p(t)) & target_type: regression (to do)
     # (3) label_mode: Triple Barrier Method & target_type: classification (to do)
@@ -30,7 +32,7 @@ def main():
     # Priority 1
     # --------------------
     CONF = yaml.safe_load(Path('../config/price_return.yml').read_text())
-    
+
     # -----------------------------
     # Initial Parameters
     # -----------------------------
@@ -38,14 +40,14 @@ def main():
     input_folder_db = CONF.get('input_folder_db')
     label_mode = CONF.get('label_mode')
     return_type = CONF.get('return_type')
-    use_resampling = CONF.get('use_resampling') 
+    use_resampling = CONF.get('use_resampling')
     resampling = CONF.get('resampling')
-    output_folder_db = CONF.get('output_folder_db') 
+    output_folder_db = CONF.get('output_folder_db')
     imbalance_classes_mode = CONF.get('imbalance_classes_mode')
     time_zone = CONF.get('time_zone')
-    
+
     # number of candles to considered for volatility
-    span_volatility = CONF.get('span_volatility') 
+    span_volatility = CONF.get('span_volatility')
     outlier_cutoff = CONF.get('outlier_cutoff')
 
     # Number of candles to hold a trade
@@ -56,7 +58,7 @@ def main():
     # -----------------------------
     # Logging Config
     # -----------------------------
-    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M") 
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M")
 
     price_return_dir = os.path.join( Path(os.getcwd()).parents[0].parents[0],
                          'logs/price_return_logs',
@@ -99,9 +101,9 @@ def main():
         timestamp_col = CONF.get('timestamp_col')
         variable = CONF.get('variable')
         target_col_name = ("{}_target_return_{}m"
-                            .format(variable, 
+                            .format(variable,
                             int(resampling[:-3]) * return_lag))
-        
+
         # if target_type == 'regression':
         #     target_variable = target_col_name
         # elif target_type == 'classification':
@@ -114,20 +116,20 @@ def main():
     if label_mode == 'TBM':
         ptsl = CONF.get('ptsl')  # Profit-Stop Loss ratio
         pt = CONF.get('pt') # Position Type 1: Long, -1: Short
-        delta_vertical_b = pd.Timedelta(minutes = v_barrier_minutes) 
+        delta_vertical_b = pd.Timedelta(minutes = v_barrier_minutes)
 
         # Volatility Parameters
         volatility_freq = CONF.get('volatility_freq') # In minutes
         delta_volatility = pd.Timedelta(minutes = volatility_freq)
         target_variable = 'label'
 
-        
+
         # For parallel labels computing
-        parallel_calculation = CONF.get('parallel_calculation') 
-        n_jobs = CONF.get('n_jobs') 
+        parallel_calculation = CONF.get('parallel_calculation')
+        n_jobs = CONF.get('n_jobs')
         max_nbytes = CONF.get('max_nbytes')
 
-   
+
 
     # ------------------------------------------------------------------------
     # Price Return
@@ -139,12 +141,12 @@ def main():
 
     logger.info("Reading Historical data")
     Loader = DataLoader(input_folder_db = input_folder_db)
-    
+
     data = Loader.load(n_days = n_days,
             symbols = SYMBOLS)
-    
-    info = "Loading data from {} until {}, years filter are {}".format(Loader.initial_date_load, 
-                                                                       Loader.initial_date_load, 
+
+    info = "Loading data from {} until {}, years filter are {}".format(Loader.initial_date_load,
+                                                                       Loader.initial_date_load,
                                                                        Loader.years_filter)
     print(info)
     logger.info(info)
@@ -168,11 +170,11 @@ def main():
                                 long_short = long_short,
                                 data = data,
                                 timestamp_col = timestamp_col,
-                                variable = variable, 
-                                span_volatility= span_volatility, 
-                                outlier_cutoff = outlier_cutoff, 
+                                variable = variable,
+                                span_volatility= span_volatility,
+                                outlier_cutoff = outlier_cutoff,
                                 return_type = return_type)
-        
+
         data = R_Signals.run()
 
         print("\n Distribution of Return Labels")
@@ -189,9 +191,9 @@ def main():
         dfs = []
 
         for ticker in SYMBOLS:
-            
+
             print("Get TBM labels for ticker", ticker)
-            
+
             df = data[data['Ticker'] == ticker].copy()
             df = df.set_index('timestamp').copy()
 
@@ -210,21 +212,21 @@ def main():
             df = TBM_labels.data.copy()
             dfs.append(df)
             del df
-            
+
         data = pd.concat(dfs)
         del dfs
 
         print("\n Distribution of TBM Labels")
         print(data.groupby(['Ticker'])['label'].value_counts())
-    
+
     logger.info(f"Price Return data generated")
-    
+
     # Create timestamp with local timezone
     local_tz = pytz.timezone(time_zone)
-    data['timestamp_local'] = data['timestamp'].apply(lambda x: utc_to_local(x, local_tz)) 
+    data['timestamp_local'] = data['timestamp'].apply(lambda x: utc_to_local(x, local_tz))
 
     data.to_parquet(f"{output_folder_db}/Tensor_Portfolio_{return_type}_return.parquet")
-    
+
 
 
 if __name__ == "__main__":
@@ -235,4 +237,3 @@ if __name__ == "__main__":
     print("Generating Price return for symbols", SYMBOLS)
     main()
     print("\n\n")
-        

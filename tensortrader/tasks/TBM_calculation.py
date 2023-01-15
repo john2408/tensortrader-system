@@ -1,15 +1,14 @@
 """Main module."""
-import pandas as pd
-import numpy as np
-import os
-from utils.utils import *
-from ML.label_methods import *
-from ETL.ETL_func import *
-from datetime import datetime
-import os
 import logging
-import dateutil
+import os
+from datetime import datetime
 
+import dateutil
+import numpy as np
+import pandas as pd
+from ETL.ETL_func import *
+from ML.label_methods import *
+from utils.utils import *
 
 SYMBOLS = SYMBOLS[1:]
 
@@ -34,7 +33,7 @@ if __name__ == "__main__":
 
             file_name = os.path.join(input_folder_db, f'{symbol}', f'{year}_{symbol}.parquet'  )
             print("Reading file", file_name)
-            
+
             df = pd.read_parquet(file_name)
             df = df[df['Date'] >= initial_date_load].copy()
             dfs.append(df)
@@ -47,43 +46,43 @@ if __name__ == "__main__":
     data.set_index('timestamp', inplace = True)
     data.sort_values(by = ['timestamp'], inplace = True)
 
-    data = (data.groupby(['Ticker'], 
+    data = (data.groupby(['Ticker'],
             group_keys= False)
             .apply(reindex_by_date)
             .reset_index())
 
-    # Convert Unix timestamp to datetime 
-    data.loc[:,'timestamp'] = pd.to_datetime(data['timestamp'], unit = "ms") 
+    # Convert Unix timestamp to datetime
+    data.loc[:,'timestamp'] = pd.to_datetime(data['timestamp'], unit = "ms")
 
 
-    if True:    
+    if True:
 
         #--------------------------------------------------------------------
         # TBM Calculation
         #--------------------------------------------------------------------
 
-        PTSL = [ [1,1], [2,2], [2,1] ] 
+        PTSL = [ [1,1], [2,2], [2,1] ]
 
         # https://stackoverflow.com/questions/40115043/no-space-left-on-device-error-while-fitting-sklearn-model
-        # Set tmp folder for joblib otherwise parallel label calculation runs into erro 
+        # Set tmp folder for joblib otherwise parallel label calculation runs into erro
         # OSError: [Errno 28] No space left on device
         os.environ['JOBLIB_TEMP_FOLDER'] = os.path.join(input_folder_db, 'tmp')
 
         # Profit-Stop Loss ratio
         #ptsl = [1,1]
         v_barrier_minutes = 15
-        delta_vertical_b = pd.Timedelta(minutes = v_barrier_minutes) # Vertical barrier length 
+        delta_vertical_b = pd.Timedelta(minutes = v_barrier_minutes) # Vertical barrier length
         output_folder_db = os.path.join(path_prefix, 'Data/Tensor_Invest_Fund/data/Cryptos/TBM')
 
         current_date = datetime.now().strftime("%Y-%m-%d-%H-%M")
         LOG_FILENAME = os.path.join( os.getcwd(), 'logs',  f"{current_date}_TBM_labels.log")
         logging.basicConfig(filename = LOG_FILENAME, level = logging.DEBUG, format= '%(asctime)s %(message)s', datefmt= '%m/%d/%Y %I:%M:%S %p')
-        
+
         # Volatility Parameters
         delta_volatility = pd.Timedelta(hours=1)
         span_volatility = 100
 
-        # Position Type 
+        # Position Type
         # 1: Long
         # -1: Short
         pt = 1
@@ -92,9 +91,9 @@ if __name__ == "__main__":
         parallel_calculation = False
 
         for ptsl in PTSL:
-            
+
             logging.info(f"Calculating labels for profit-stop ratio {ptsl}")
-            
+
 
             if parallel_calculation:
                 logging.info(f"using Parallel Computing {ptsl}")
@@ -119,16 +118,16 @@ if __name__ == "__main__":
 
                 df_sub = df_sub.set_index('timestamp').copy()
 
-                try: 
-                    TBM_parallel = TripleBarrierMethod(df_sub, 
+                try:
+                    TBM_parallel = TripleBarrierMethod(df_sub,
                                         ticker,
-                                        ptsl, 
-                                        delta_vertical_b, 
-                                        pt, 
-                                        delta_volatility, 
-                                        span_volatility, 
+                                        ptsl,
+                                        delta_vertical_b,
+                                        pt,
+                                        delta_volatility,
+                                        span_volatility,
                                         n_jobs,
-                                        parallel_calculation, 
+                                        parallel_calculation,
                                         max_nbytes)
 
                     TBM_parallel.run()

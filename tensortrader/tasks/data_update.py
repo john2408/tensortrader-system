@@ -1,9 +1,10 @@
-from binance import Client
 import logging
 from datetime import datetime
 
-from tensortrader.ETL.ETL_func import *
+from binance import Client
+
 from tensortrader.constants import *
+from tensortrader.ETL.ETL_func import *
 
 # export PYTHONPATH="${PYTHONPATH}:/mnt/d/Tensor/tensortrader-system"
 # Logging Config
@@ -12,9 +13,9 @@ LOG_FILENAME = os.path.join( Path(os.getcwd()).parents[0].parents[0], 'logs/data
 
 print("Logging data at ", LOG_FILENAME)
 
-logging.basicConfig(filename = LOG_FILENAME, 
-                    level = logging.DEBUG, 
-                    format= '%(asctime)s %(message)s', 
+logging.basicConfig(filename = LOG_FILENAME,
+                    level = logging.DEBUG,
+                    format= '%(asctime)s %(message)s',
                     datefmt= '%m/%d/%Y %I:%M:%S %p')
 
 config_path = join(Path(os.getcwd()).parents[0].parents[0], 'config.json')
@@ -32,7 +33,7 @@ class task():
     def run(self):
         raise NotImplementedError
 
-    @property     
+    @property
     def description(self):
         return self._description
 
@@ -47,11 +48,11 @@ class ETL_update_task(task):
     """
 
 
-    def __init__(self, description, 
-                    storage_folder, 
+    def __init__(self, description,
+                    storage_folder,
                     config,
                     load_size_days,
-                    start_time_stamp, 
+                    start_time_stamp,
                     end_timestamp,
                     interval,
                     symbols
@@ -68,7 +69,7 @@ class ETL_update_task(task):
             interval (_type_): _description_
             symbols (_type_): _description_
         """
-        super().__init__(description, 
+        super().__init__(description,
                         storage_folder )
 
         self.config = config
@@ -78,7 +79,7 @@ class ETL_update_task(task):
         self.interval = interval
         self.symbols = symbols
 
-    
+
 
     def run(self, verbose = 0):
         """_summary_
@@ -88,11 +89,11 @@ class ETL_update_task(task):
         """
 
         logging.info("Creating new ETL Object for Binance")
-        new_ETL = ETL_Binance(self.symbols, 
+        new_ETL = ETL_Binance(self.symbols,
                         self.storage_folder,
-                        self.load_size_days, 
-                        self.end_timestamp, 
-                        self.start_time_stamp, 
+                        self.load_size_days,
+                        self.end_timestamp,
+                        self.start_time_stamp,
                         total_days = None)
 
         new_ETL.connect_API(self.config)
@@ -104,7 +105,7 @@ class ETL_update_task(task):
 
 if __name__ == "__main__":
 
-    
+
     load_size_days = 5
     start_time_stamp = None
     end_timestamp = datetime.utcnow() - timedelta(minutes = 1) # in order to get all complete finished candles
@@ -115,15 +116,13 @@ if __name__ == "__main__":
     description = "Daily update minutely candle bars data for selected portfolio"
 
     logging.info(f"Updating candles data for selected portfolio")
-    ETL_update = ETL_update_task(description, 
-                                storage_folder, 
+    ETL_update = ETL_update_task(description,
+                                storage_folder,
                                 config,
                                 load_size_days,
-                                start_time_stamp, 
+                                start_time_stamp,
                                 end_timestamp,
                                 INTERVAL,
                                 SYMBOLS)
 
     ETL_update.run()
-
-    

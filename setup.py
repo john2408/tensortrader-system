@@ -2,7 +2,7 @@
 
 """The setup script."""
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
@@ -15,8 +15,8 @@ requirements = ['Click>=7.0', ]
 test_requirements = ['pytest>=3', ]
 
 setup(
-    author="John Torres, Jonas Chors",
-    author_email='john.torres.trader@gmail.com',
+    author="John Torres",
+    author_email='john.torres.tensor@gmail.com',
     python_requires='>=3.6',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',

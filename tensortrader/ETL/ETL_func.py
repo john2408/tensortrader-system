@@ -1,21 +1,20 @@
-import pandas as pd 
-import numpy as np  
-import json 
+import json
 import os
-from pathlib import Path
+import time
+from collections import OrderedDict
+from datetime import date, datetime, timedelta
 from os.path import join
+from pathlib import Path
+
 import dateutil
+import numpy as np
+import pandas as pd
+from binance import Client, ThreadedDepthCacheManager, ThreadedWebsocketManager
 
 # https://towardsdatascience.com/how-to-fix-modulenotfounderror-and-importerror-248ce5b69b1c
 # export PYTHONPATH="${PYTHONPATH}:/path/to/your/project/"
 # export PYTHONPATH="${PYTHONPATH}:/home/john/Projects/Tensor/tensortrader/tensortrader
 from tensortrader.utils.utils import *
-
-
-from binance import Client, ThreadedWebsocketManager, ThreadedDepthCacheManager
-from datetime import date, datetime, timedelta
-import time
-from collections import OrderedDict
 
 # Binance REST API Guideline
 # https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md
@@ -23,9 +22,9 @@ from collections import OrderedDict
 
 class ETL():
 
-    def __init__(self, load_size_days, 
-                    end_timestamp, 
-                    start_timestamp = None, 
+    def __init__(self, load_size_days,
+                    end_timestamp,
+                    start_timestamp = None,
                     total_days = None ):
         """ETL Metaclass
 
@@ -33,10 +32,10 @@ class ETL():
             load_size_days (int): number of days to load per request
             end_timestamp (datetime.datetime): end update timestamp
                 normally set to datetime.utcnow()
-            start_timestamp (datetime.datetime, optional): start update timestamp. 
-                    Optional, if not set, then when updating a file lastet timestamp will 
-                    be used as start timestamp. 
-            total_days (int, optional): Total days to download, when 
+            start_timestamp (datetime.datetime, optional): start update timestamp.
+                    Optional, if not set, then when updating a file lastet timestamp will
+                    be used as start timestamp.
+            total_days (int, optional): Total days to download, when
                 retrieving historical data for a given asset. Defaults to None.
         """
 
@@ -50,31 +49,31 @@ class ETL():
     def import_timestamps(self):
         return self._import_timestamps
 
-    
+
     def create_import_timestamps_tuples(self):
-        """Create import timestamps for a given 
-        stock or cryptocurrency, dividing the 
+        """Create import timestamps for a given
+        stock or cryptocurrency, dividing the
         time in the number of days per request
-        given by the variable 'load_size_days' 
+        given by the variable 'load_size_days'
         between start and end timestamp.
-        
+
         Returns:
             list: start and ending timestamps for data retrieval
         """
-        
+
         self._import_timestamps = []
 
         if self.total_days is not None:
 
             print("for")
-            
+
             for lot in range(1, int(self.total_days/self.load_size_days)):
-                self._import_timestamps.append((self.end_timestamp - timedelta(days = lot * self.load_size_days), 
+                self._import_timestamps.append((self.end_timestamp - timedelta(days = lot * self.load_size_days),
                                             self.end_timestamp - timedelta(days = (lot -1) * self.load_size_days)))
                 print("adfadsfölkj")
         else:
-            
-            
+
+
             # To create daily updates for appending to historical data
             lot = 1
             end_time = self.start_timestamp
@@ -82,21 +81,21 @@ class ETL():
 
                 start_time = self.start_timestamp + timedelta(days = (lot -1)  * self.load_size_days)
                 end_time =  self.start_timestamp + timedelta(days = lot * self.load_size_days)
-                
+
                 if end_time > self.end_timestamp:
                     end_time = self.end_timestamp
 
-                self._import_timestamps.append((start_time, 
+                self._import_timestamps.append((start_time,
                                                 end_time))
 
                 lot += 1
 
-            
+
         return self._import_timestamps
 
     def retrieve_historical_data(self):
         raise NotImplementedError
-        
+
 
     def update_data(lastest_update_date ):
         raise NotImplementedError
@@ -105,19 +104,19 @@ class ETL():
 
 class ETL_Binance(ETL):
     """ETL Class to retrieve data
-    using Binance API via python 
-    Binance package. 
+    using Binance API via python
+    Binance package.
 
     Args:
         ETL (class): ETL Metaclass
     """
 
-    def __init__(self, 
-                    tickers, 
+    def __init__(self,
+                    tickers,
                     storage_folder,
-                    load_size_days, 
+                    load_size_days,
                     end_timestamp,
-                    start_timestamp = None, 
+                    start_timestamp = None,
                     total_days = None):
         """_summary_
 
@@ -127,10 +126,10 @@ class ETL_Binance(ETL):
             load_size_days (int): number of days to load per request
             end_timestamp (datetime.datetime): end update timestamp
                 normally set to datetime.utcnow()
-            start_timestamp (datetime.datetime, optional): start update timestamp. 
-                    Optional, if not set, then when updating a file lastet timestamp will 
-                    be used as start timestamp. 
-            total_days (int, optional): Total days to download, when 
+            start_timestamp (datetime.datetime, optional): start update timestamp.
+                    Optional, if not set, then when updating a file lastet timestamp will
+                    be used as start timestamp.
+            total_days (int, optional): Total days to download, when
                 retrieving historical data for a given asset. Defaults to None.
         """
 
@@ -144,11 +143,11 @@ class ETL_Binance(ETL):
         self._client = None
 
 
-    @property     
+    @property
     def tickers(self):
         return self._tickers
 
-    @property     
+    @property
     def client(self):
         return self._client
 
@@ -167,7 +166,7 @@ class ETL_Binance(ETL):
             print("Unsucessfull connection, ", e)
 
     def download_historical_data(self, interval, limit = 1000, verbose = 0):
-        """Method to download historical data. 
+        """Method to download historical data.
 
         Args:
             interval (str): time interval for candle bars
@@ -193,11 +192,11 @@ class ETL_Binance(ETL):
             if not _df.empty:
                 self.store_historical_as_parquet(_df, ticker)
 
-    
+
     def update_data(self, interval, limit = 1000, verbose = 0):
         """Update data for existing historical data
-        for coinpairs. It updates the current year's file 
-        for every ticker in the tickers list. 
+        for coinpairs. It updates the current year's file
+        for every ticker in the tickers list.
 
         Args:
             interval (str): time interval for candle bars
@@ -205,11 +204,11 @@ class ETL_Binance(ETL):
             verbose (int, optional): Verbosity level. Defaults to 0.
         """
 
-       
+
         # TODO: adjust function to be able to update multiple
         # years at once, when year end to year begin
         for ticker in self._tickers:
-            
+
             if verbose > 0:
                 print("Updating data for ticker", ticker)
 
@@ -224,8 +223,8 @@ class ETL_Binance(ETL):
             self._import_timestamps = self.create_import_timestamps_tuples()
 
             if verbose > 0:
-                print(" Updating data between", 
-                    self._import_timestamps[0][0], 
+                print(" Updating data between",
+                    self._import_timestamps[0][0],
                     " and ", self._import_timestamps[-1][1])
 
             df_new = self.retrieve_historical_data(ticker, interval, limit )
@@ -244,12 +243,12 @@ class ETL_Binance(ETL):
             else:
 
                 print("No data found to update")
-                
+
 
 
     def retrieve_historical_data(self, ticker, interval, limit = 1000 ):
-        """Get historical data from Binance API. 
-        Avoiding request overload or account ban. 
+        """Get historical data from Binance API.
+        Avoiding request overload or account ban.
 
         Args:
             ticker (str): coinpair ticker
@@ -270,11 +269,11 @@ class ETL_Binance(ETL):
 
             print("Getting data from ", start_str, " to , ", end_str)
 
-            try:                
-                bars = self._client.get_historical_klines(symbol = ticker, 
+            try:
+                bars = self._client.get_historical_klines(symbol = ticker,
                                                     interval = interval,
-                                                    start_str = str(start_str), 
-                                                    end_str = str(end_str), 
+                                                    start_str = str(start_str),
+                                                    end_str = str(end_str),
                                                     limit = limit)
             except Exception as e:
 
@@ -282,8 +281,8 @@ class ETL_Binance(ETL):
                 print(" Error", e)
                 print(" No more data will be imported. Closing Loop")
                 break
-                
-            
+
+
             # TODO: Check if all data is in same timezone
             df = pd.DataFrame(bars)
             df["Date"] = pd.to_datetime(df.iloc[:,0], unit = "ms")
@@ -291,11 +290,11 @@ class ETL_Binance(ETL):
                             "Clos Time", "Quote Asset Volume", "Number of Trades",
                             "Taker Buy Base Asset Volume", "Taker Buy Quote Asset Volume", "Ignore", "Date"]
 
-            
+
             dfs.append(df)
 
             number_of_requests += 1
-            
+
             sleep_time_sec = np.random.randint(2,4)
             print("Waiting ", sleep_time_sec, " Sec...")
 
@@ -307,10 +306,10 @@ class ETL_Binance(ETL):
 
                 sleep_time_sec = 60
                 number_of_requests = 0
-            
+
             time.sleep(sleep_time_sec)
 
-        
+
         if dfs:
 
             #Concatenate all single results
@@ -327,7 +326,7 @@ class ETL_Binance(ETL):
     def store_historical_as_parquet(self, df, ticker):
         """Store data as parquet.
         For every coinpair and every year in the history
-        a file in the form 
+        a file in the form
         YYYY_ticker.parquet will be generated.
 
         Args:
@@ -362,7 +361,7 @@ class ETL_Binance(ETL):
     def store_update_as_parquet(self, df, ticker, year):
         """Store updated data for coinpair.
         An available file of the form YYYY_ticker.parquet
-        will be updated with the most recent data. 
+        will be updated with the most recent data.
 
         Args:
             df (pd.DataFrame): dataframe with newest data
@@ -397,15 +396,15 @@ class ETL_Binance(ETL):
 
         latest_update_year = max([x[:4] for x in os.listdir(ticker_dir)])
 
-        lastest_file = os.path.join(self.storage_folder, 
-                                ticker, 
+        lastest_file = os.path.join(self.storage_folder,
+                                ticker,
                                 f"{latest_update_year}_{ticker}.parquet")
 
         return lastest_file
-    
+
     def output_df_format(self, df):
 
-        cols = ['Open', 'High', 'Low', 'Close', 'Volume', 
+        cols = ['Open', 'High', 'Low', 'Close', 'Volume',
        'Quote Asset Volume', 'Number of Trades', 'Taker Buy Base Asset Volume',
        'Taker Buy Quote Asset Volume']
         df = format_cols_to(df, cols, dtype = 'float64')
@@ -434,28 +433,28 @@ class ETL_Binance(ETL):
         return _df
 
     def retrieve_all_tickers(self):
-        """Retrieve all tickers available in 
+        """Retrieve all tickers available in
         Binance
 
         Returns:
             list: list with all coinpairs tickers
         """
-        
+
         prices = self.client.get_all_tickers()
 
         return [x['symbol'] for x in prices]
 
 
 class DataLoader():
-    """Data loader class 
+    """Data loader class
 
-    It loads historical candle basrs data 
-    from a parquet datalake for one 
-    or multiple tickers. 
+    It loads historical candle basrs data
+    from a parquet datalake for one
+    or multiple tickers.
 
-    It considers the end date as the current date 
+    It considers the end date as the current date
     and calculates the start date using the n_days
-    parameter. 
+    parameter.
     """
 
     def __init__(self, input_folder_db: str,) -> None:
@@ -464,39 +463,39 @@ class DataLoader():
             input_folder_db (str): database folder
         """
         self.input_folder_db = input_folder_db
-        
+
         self.current_timestamp = None
         self.initial_date_load = None
         self.years_filter = None
-     
+
     def get_years_filter(self) -> None:
         """Get year to load for individual
-        database yearly files. 
+        database yearly files.
         """
         start_year = self.initial_date_load.year
         end_year = self.current_timestamp.year
-        
+
         if start_year != end_year:
             self.years_filter = [x for x in range(start_year, end_year + 1)]
         else:
             self.years_filter = [start_year]
-        
-        
+
+
 
     def load(self, n_days, symbols) -> pd.DataFrame:
 
         self.current_timestamp = datetime.today()
         self.initial_date_load = self.current_timestamp - dateutil.relativedelta.relativedelta(days = n_days)
-        
+
         self.get_years_filter()
-                         
+
         dfs = []
 
         for symbol in symbols:
             for year in self.years_filter:
 
-                file_name = os.path.join(self.input_folder_db, 
-                                    f'{symbol}', 
+                file_name = os.path.join(self.input_folder_db,
+                                    f'{symbol}',
                                     f'{year}_{symbol}.parquet')
 
                 print("Reading file", file_name)
@@ -516,27 +515,27 @@ class DataLoader():
         data.set_index('timestamp', inplace = True)
         data.sort_values(by = ['timestamp'], inplace = True)
 
-        data = (data.groupby(['Ticker'], 
+        data = (data.groupby(['Ticker'],
                         group_keys= False)
                         .apply(reindex_by_date)
                         .reset_index())
 
-        # Convert Unix timestamp to datetime 
-        data.loc[:,'timestamp'] = pd.to_datetime(data['timestamp'], unit = "ms") 
+        # Convert Unix timestamp to datetime
+        data.loc[:,'timestamp'] = pd.to_datetime(data['timestamp'], unit = "ms")
 
         data = data.drop(columns = ['max_trades'])
 
         print("Dataframe size is ", data.shape)
 
         return data
-    
-    def resampling(self, 
+
+    def resampling(self,
                     df : pd.DataFrame,
                     resampling_value : str,
                     ) -> pd.DataFrame:
-        """Resample data frame 
+        """Resample data frame
         of the form OHLCVNT
-        -> Open, High, Low, Close, Volume, 
+        -> Open, High, Low, Close, Volume,
         Number of Trades, Ticker
 
         Args:
@@ -572,4 +571,3 @@ class DataLoader():
         data['Date'] = data['timestamp'].copy()
 
         return data
-

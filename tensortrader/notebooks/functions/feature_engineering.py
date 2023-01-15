@@ -1,6 +1,5 @@
-import pandas as pd
 import numpy as np
-
+import pandas as pd
 
 FEATURES_CONFIG_IDS = {1: {'ta': [{"kind": "ema", "length": 3},
                                     {"kind": "ema", "length": 15},
@@ -57,7 +56,7 @@ FEATURES_CONFIG_IDS = {1: {'ta': [{"kind": "ema", "length": 3},
                             # also apply low-stop diff
                             'ref_variable_lags' : "stop",
                             'Volume_Features': False},
-                            
+
 
                         5: {'ta': [{"kind": "bbands", "length": 10},
                                     {"kind": "macd", "fast": 5, "slow": 30},
@@ -69,7 +68,7 @@ FEATURES_CONFIG_IDS = {1: {'ta': [{"kind": "ema", "length": 3},
                             'lags': 10,
                             'ref_variable_lags' : "Low",
                             'Volume_Features': False},
-                        
+
                         6: {'ta': [
                                     {"kind": "bbands", "length": 10},
                                     {"kind": "macd", "fast": 5, "slow": 30},
@@ -118,7 +117,7 @@ FEATURES_CONFIG_IDS = {1: {'ta': [{"kind": "ema", "length": 3},
                             'EntryPrice_PrevClose': True,
                             'lags_diff' : [1,3,15]
                             }
-                            
+
                             ,
 
                         9: {'ta': [
@@ -139,9 +138,9 @@ FEATURES_CONFIG_IDS = {1: {'ta': [{"kind": "ema", "length": 3},
                             'Return_Features': True,
                             'return_lags': [1,15,30,60],
                             'Momentum_Features': True,
-                            
+
                             },
-                    
+
                         10: {'ta': [
                                     {"kind": "bbands", "length": 30},
                                     {"kind": "macd", "fast": 30, "slow": 120},
@@ -160,9 +159,9 @@ FEATURES_CONFIG_IDS = {1: {'ta': [{"kind": "ema", "length": 3},
                             'Return_Features': True,
                             'return_lags': [1,15,30,60],
                             'Momentum_Features': True,
-                            
+
                             },
-                        
+
                         11: {'ta': [
                                     {"kind": "bbands", "length": 30},
                                     {"kind": "bbands", "length": 120},
@@ -190,8 +189,8 @@ FEATURES_CONFIG_IDS = {1: {'ta': [{"kind": "ema", "length": 3},
                             'return_lags': [1,15,30,60],
                             'Momentum_Features': False,
 
-                            'Prob_Features_Windows': (2,6), 
-                            
+                            'Prob_Features_Windows': (2,6),
+
                             },
 
                         11: {'ta': [
@@ -223,8 +222,8 @@ FEATURES_CONFIG_IDS = {1: {'ta': [{"kind": "ema", "length": 3},
 
                             'use_prob_features': True,
                             'probability_features' : ['entry_type', 'risk_type'],
-                            'Prob_Features_Windows': (2,6), 
-                            
+                            'Prob_Features_Windows': (2,6),
+
                             },
 
                         12: {'ta': [
@@ -292,7 +291,7 @@ FEATURES_CONFIG_IDS = {1: {'ta': [{"kind": "ema", "length": 3},
                         14: {'ta': [
                                     {"kind": "sma", "length":15},
                                     {"kind": "sma", "length":60},
-                                    
+
                                     ]
                             ,
                             'include_lags': True,
@@ -348,7 +347,7 @@ FEATURES_CONFIG_IDS = {1: {'ta': [{"kind": "ema", "length": 3},
                             'forecast_variable':'return_5m',
                             'forecast_shift': 5
 
-                            }, 
+                            },
 
                          16: {'ta': [
                                        {"kind": "ema", "length": 3},
@@ -368,7 +367,7 @@ FEATURES_CONFIG_IDS = {1: {'ta': [{"kind": "ema", "length": 3},
 
                             'Volume_Features': True,
                             'Volume_Windows': (5,60),
-                            'Volume_Returns': True, 
+                            'Volume_Returns': True,
                             'Volume_Returns_lags': [5, 15],
                             'Volume_Returns_binary': True,
 
@@ -388,6 +387,6 @@ FEATURES_CONFIG_IDS = {1: {'ta': [{"kind": "ema", "length": 3},
                             'forecast_shift': 5
 
                             }
-                        
-                        
+
+
                         }

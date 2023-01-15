@@ -1,25 +1,26 @@
-import pandas as pd
-import numpy as np 
+import os
+from datetime import datetime, timedelta
+from pathlib import Path
+
 import matplotlib.pyplot as plt
-import statsmodels 
+import numpy as np
+import pandas as pd
+import pytz
 import pywt
+import statsmodels
+import yaml
 from statsmodels.graphics.tsaplots import plot_pacf
 from statsmodels.tsa.stattools import pacf
 
+from tensortrader.constants import *
+from tensortrader.tasks.task_utils import create_logging
+from tensortrader.transformations.denoising import *
+from tensortrader.utils.utils import utc_to_local
 
 # linux: export PYTHONPATH="${PYTHONPATH}:/mnt/d/Tensor/tensortrader-system/"
 # win: ---
 
-from tensortrader.transformations.denoising import *
-from tensortrader.tasks.task_utils import create_logging
-from tensortrader.constants import *
-from tensortrader.utils.utils import utc_to_local
 
-from datetime import datetime, timedelta
-import os
-from pathlib import Path
-import yaml
-import pytz
 
 def main():
 
@@ -34,7 +35,7 @@ def main():
     input_data_path = CONF['input_data_path']
     db_name = CONF['db_name']
     output_data_path = CONF['output_data_path']
-    #Denoising method 
+    #Denoising method
     denoising_method = CONF['denoising_method']
     # Time zone
     time_zone = CONF['time_zone']
@@ -44,14 +45,14 @@ def main():
     minute_sampling = CONF['minute_sampling']
     # lookback subset to PACF pattern search
     pacf_days_subset = CONF['pacf_days_subset']
-    # Number of hours to consider for 
+    # Number of hours to consider for
     # lag pattern lookup
     nn_hours_pattern_lookup = CONF['nn_hours_pattern_lookup']
     # Length of Subset Timeseries
-    subset_wavelet_transform = int(24*(60/minute_sampling)*pacf_days_subset) #60*hours # Number 
+    subset_wavelet_transform = int(24*(60/minute_sampling)*pacf_days_subset) #60*hours # Number
     # Number of lags to analyse in Partial Autocorrelation Function
     # 48 lags * 15 min_sampling / 60 hours per minute = 12 Hours in lags
-    lags_pacf = (60/minute_sampling)*nn_hours_pattern_lookup  
+    lags_pacf = (60/minute_sampling)*nn_hours_pattern_lookup
 
     # Parameters Partial Autocorrelation Function
     alpha_pacf = CONF['alpha_pacf']
@@ -62,7 +63,7 @@ def main():
     # -----------------------------
     # Logging Config
     # -----------------------------
-    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M") 
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M")
 
     denoising_log_dir = os.path.join( Path(os.getcwd()).parents[0].parents[0],
                          'logs/denoising_logs',
@@ -89,7 +90,7 @@ def main():
     # Data Import
     # -----------------------------
     db_loc = os.path.join(input_data_path, db_name)
-    try: 
+    try:
         logger.info(f"Reading File at loc {db_loc}")
         df = pd.read_parquet(db_loc)
     except Exception as e:
@@ -114,30 +115,30 @@ def main():
         denoiser = denoising(signal = prices_return)
 
         if denoising_method == 'wavelet':
-            denoised_prices_return = denoiser.wavelet_denoising( 
+            denoised_prices_return = denoiser.wavelet_denoising(
                                     thresh = thresh,
                                     wavelet = wavelet)
 
 
-        # Get partial autocorrelation 
-        pacf_values, confint = pacf(denoised_prices_return, 
-                                    nlags = lags_pacf, 
-                                    alpha = alpha_pacf, 
+        # Get partial autocorrelation
+        pacf_values, confint = pacf(denoised_prices_return,
+                                    nlags = lags_pacf,
+                                    alpha = alpha_pacf,
                                     method = method_pacf)
 
         # Get deepest significant lag level
         max_lag_pacf = get_significant_max_lag_pacf(pacf_values = pacf_values,
-                                    confint = confint, 
+                                    confint = confint,
                                     lags_pacf = lags_pacf )
 
-        
-        lag_analysis = f"""For Ticker {ticker}  
-                        the max significant autocorrelation is 
+
+        lag_analysis = f"""For Ticker {ticker}
+                        the max significant autocorrelation is
                         {max_lag_pacf}  lag from {lags_pacf} lags analyzed
-                        """    
+                        """
 
         logger.info(lag_analysis)
-        print(lag_analysis)                        
+        print(lag_analysis)
 
         df_temp = pd.DataFrame()
         df_temp['timestamp_local'] = local_timestamps
@@ -155,13 +156,13 @@ def main():
     # -----------------------------
 
     df_prices = pd.concat(dfs)
-    
-    # local_tz = pytz.timezone(time_zone)
-    # df_prices['timestamp'] =  df_prices['timestamp'].apply(lambda x: utc_to_local(x, local_tz)) 
-    df_prices['timestamp_return_ref'] =  df_prices['timestamp_local'].apply(lambda x: x + timedelta(minutes= minute_sampling) ) 
 
-    df_prices = df_prices.filter(['timestamp_local','timestamp_return_ref', 
-                            'price_returns', 'denoised_price_returns', 
+    # local_tz = pytz.timezone(time_zone)
+    # df_prices['timestamp'] =  df_prices['timestamp'].apply(lambda x: utc_to_local(x, local_tz))
+    df_prices['timestamp_return_ref'] =  df_prices['timestamp_local'].apply(lambda x: x + timedelta(minutes= minute_sampling) )
+
+    df_prices = df_prices.filter(['timestamp_local','timestamp_return_ref',
+                            'price_returns', 'denoised_price_returns',
                             'ticker','pacf_lag']).copy()
 
     # -----------------------------
@@ -175,8 +176,8 @@ def main():
     # Create PDF with Plots
     # -----------------------------
     logger.info("Generating Denoised returns plots")
-    generate_pdf_denoised_plots(df_prices = df_prices, 
-                        storage_loc = denoising_log_dir, 
+    generate_pdf_denoised_plots(df_prices = df_prices,
+                        storage_loc = denoising_log_dir,
                         file_name = 'Tensor_Portfolio_denoised_prices')
 
     logger.info(f"denoised data sucessfully stored at {output_data_path} ")

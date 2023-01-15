@@ -17,8 +17,8 @@ TensorTrader
 
 Tensor Algorithmic Trader
 
-Python package to train ML based models for automated trading strategy on cryptocurrencies. 
-Using Python Binance API. 
+Python package to train ML based models for automated trading strategy on cryptocurrencies.
+Using Python Binance API.
 
 To start run file tensortrader/task/bactesting_task.py. Change configuration on backtesting.yml and feature_eng.yml.
 
@@ -46,7 +46,7 @@ To Do's
 
 **Model Improvement**
         * Hyperparameter Optimization for TCN Model
-        * Test GCN Model 
+        * Test GCN Model
         * Try out log(p(t)/p(t-1)) as return metric
         * Automate in the Cloud
 

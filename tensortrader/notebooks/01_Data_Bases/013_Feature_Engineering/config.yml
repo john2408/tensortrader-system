@@ -1,37 +1,37 @@
 Feature_Engineering:
     1:
-      ta: 
-        - 
+      ta:
+        -
           "kind": "sma"
           "length": 15
-        - 
-          "kind": "sma" 
+        -
+          "kind": "sma"
           "length": 120
-        - 
-          "kind": "vwma" 
+        -
+          "kind": "vwma"
           "length": 60
-        - 
-          "kind": "vwma" 
+        -
+          "kind": "vwma"
           "length": 15
         -
           "kind": "bbands"
           "length": 15
-        - 
+        -
           "kind": "bbands"
           "length": 120
-        - 
+        -
           "kind": "macd"
           "fast": 15
           "slow": 120
-        - 
-          "kind": "rsi" 
-          "length": 15 
-        - 
+        -
+          "kind": "rsi"
+          "length": 15
+        -
           "kind": "atr"
           "length": 15
-        - 
+        -
           'kind': "pdist"
-      
+
       'include_lags': True
       'lags': [1,3,5,15,30]
       'ref_variable_lags' : ["Close"]

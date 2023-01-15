@@ -1,23 +1,23 @@
-import mlflow
-import sklearn
-import warnings
-import os
-import pandas as pd
 import datetime
-from functions import utils
+import os
+import warnings
+
+import mlflow
 import numpy as np
-
+import pandas as pd
+import sklearn
+from functions import utils
 from sklearn.metrics import confusion_matrix
-from sklearn.utils import class_weight
 from sklearn.model_selection import GridSearchCV
-
+from sklearn.utils import class_weight
 from xgboost import XGBClassifier
 
-def generate_testing_days(df: pd.DataFrame, 
-                            n_splits: int , 
+
+def generate_testing_days(df: pd.DataFrame,
+                            n_splits: int ,
                           n_days_per_testing: int):
     """Function to generate Testing Days
-    
+
     Args:
         n_splits (int): number of cross validations to generate
         n_days_per_testing (int): number of days per testing
@@ -55,13 +55,13 @@ def check_test_training_indeces(cv_bayesian_search, X):
 
 def calculate_class_weights_from_feature(df: pd.DataFrame,
                                         Y_train: pd.DataFrame,
-                                        target_variable: str, 
+                                        target_variable: str,
                                         forecast_variable: str,
-                                        metric: str, 
+                                        metric: str,
                                         ):
     """Function to class weights from a feature column
-        use the latest calculated value. 
-    
+        use the latest calculated value.
+
     Args:
         df (pandas.Dataframe): df input data containin the features
         Y_train (pandas.DataFrame): df containing the training samples
@@ -81,9 +81,9 @@ def calculate_class_weights_from_feature(df: pd.DataFrame,
     print(" calculating class weights")
     print(df_class_weights)
 
-    df_class_weights = pd.merge(Y_train, df_class_weights, 
-                            left_on = [forecast_variable] , 
-                            right_on = [target_variable], 
+    df_class_weights = pd.merge(Y_train, df_class_weights,
+                            left_on = [forecast_variable] ,
+                            right_on = [target_variable],
                             how = 'left')
 
     classes_weights = np.array(df_class_weights['class_weight'])
@@ -97,7 +97,7 @@ class MultipleTimeSeriesCV:
     Assumes the MultiIndex contains levels 'symbol' and 'date'.
     Purges overlapping outcomes.
     """
-    
+
     def __init__(self,
                 n_splits=3,
                 train_period_length=126,
@@ -111,7 +111,7 @@ class MultipleTimeSeriesCV:
         self.train_length = train_period_length
         self.shuffle = shuffle
         self.date_idx = date_idx
-    
+
     def split(self, X, y=None, groups=None):
         unique_dates = X.index.get_level_values(self.date_idx).unique()
         days=sorted(unique_dates, reverse=True)
@@ -123,18 +123,18 @@ class MultipleTimeSeriesCV:
             train_start_idx = train_end_idx + self.train_length + self.lookahead -1
             split_idx.append([train_start_idx, train_end_idx,
                              test_start_idx, test_end_idx])
-        
+
         dates = X.reset_index()[[self.date_idx]]
         for train_start, train_end, test_start, test_end in split_idx:
             train_idx = dates[(dates[self.date_idx] > days[train_start])
                              & (dates[self.date_idx] <= days[train_end])].index
             test_idx = dates[(dates[self.date_idx]> days[test_start])
                             & (dates[self.date_idx] <= days[test_end])].index
-            
+
             if self.shuffle:
                 np.random.shuffle(list(train_idx))
             yield train_idx.to_numpy(), test_idx.to_numpy()
-    
+
     def get_n_splits(self, X, y, groups=None):
         return self.n_splits
 
@@ -142,16 +142,16 @@ class MultipleTimeSeriesCV:
 
 def gridcv_xgb_model(df : pd.DataFrame,
                         target_variable : str,
-                        training_date_split: datetime.datetime, 
+                        training_date_split: datetime.datetime,
                         param_grid: dict,
                         n_jobs : int = -2):
     """Hyperparameter Optimization for XGboost using GridSearch
     exahustive search
-    
+
     Args:
         df (pandas.DataFrame): Input data frame containg target variable and features
         target_variable (str): Target variable to train for
-        training_date_split (datetime.datetime): Split day for train and test sets 
+        training_date_split (datetime.datetime): Split day for train and test sets
         param_grid (dict): parameter grid
         n_jobs (int): number of cores to use
     """
@@ -178,10 +178,10 @@ def gridcv_xgb_model(df : pd.DataFrame,
     )
 
     # TODO: Apply Grid Search on different parameeters
-    xgb_model = XGBClassifier(objective="binary:logistic", 
+    xgb_model = XGBClassifier(objective="binary:logistic",
                                 booster='gbtree',
                                 eval_metric='auc',
-                                tree_method='hist', 
+                                tree_method='hist',
                                 grow_policy='lossguide',
                                 use_label_encoder=False)
 
@@ -201,18 +201,18 @@ def gridcv_xgb_model(df : pd.DataFrame,
     return model, class_accuracy, X_columns
 
 
-def log_run(gridsearch: sklearn.model_selection.GridSearchCV, 
+def log_run(gridsearch: sklearn.model_selection.GridSearchCV,
             class_accuracy: dict,
             add_params: dict,
             training_columns: list,
-            model_name: str, 
-            run_index: int, 
-            experiment_data_folder: str, 
-            conda_env: dict, 
+            model_name: str,
+            run_index: int,
+            experiment_data_folder: str,
+            conda_env: dict,
             tags: dict,
             log_only_best: bool):
     """Logging of cross validation results to mlflow tracking server
-    
+
     Args:
         gridsearch (sklearn.GridSearchCV): grid search object
         class_accuracy (list): class accuracy
@@ -226,7 +226,7 @@ def log_run(gridsearch: sklearn.model_selection.GridSearchCV,
         tags (dict): Dictionary of extra data and tags (usually features)
         log_only_best (bool): whether logging only best result
     """
-    
+
     cv_results = gridsearch.cv_results_
 
     with mlflow.start_run(run_name=str(run_index)) as run:
@@ -236,7 +236,7 @@ def log_run(gridsearch: sklearn.model_selection.GridSearchCV,
         mlflow.log_param("folds", gridsearch.cv)
 
         if log_only_best:
-            
+
             mlflow.log_params(gridsearch.best_params_)
         else:
             #-----------------------------------------------------------------------------
@@ -245,7 +245,7 @@ def log_run(gridsearch: sklearn.model_selection.GridSearchCV,
             #params = list(cv_results['params'][0].keys())
             mlflow.log_params(cv_results['params'][run_index])
 
-            
+
         #-----------------------------------------------------------------------------
         print(" Additional Parameters")
         mlflow.log_params(add_params)
@@ -253,15 +253,15 @@ def log_run(gridsearch: sklearn.model_selection.GridSearchCV,
         #'std_test_score'
         #-----------------------------------------------------------------------------
         print(" Logging metrics")
-    
+
         mlflow.log_metric('mean_test_score', cv_results.get('mean_test_score')[run_index] )
         mlflow.log_metric('std_test_score', cv_results.get('std_test_score')[run_index] )
         #-----------------------------------------------------------------------------
-        print(" Logging class accuracy") 
-        mlflow.log_metrics(class_accuracy)  
+        print(" Logging class accuracy")
+        mlflow.log_metrics(class_accuracy)
 
         #-----------------------------------------------------------------------------
-        print(" Logging model")        
+        print(" Logging model")
         mlflow.sklearn.log_model(gridsearch.best_estimator_, model_name, conda_env=conda_env)
 
         #-----------------------------------------------------------------------------
@@ -275,8 +275,8 @@ def log_run(gridsearch: sklearn.model_selection.GridSearchCV,
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             pd.DataFrame(cv_results).to_csv(csv, index=False)
-        
-        mlflow.log_artifact(csv) 
+
+        mlflow.log_artifact(csv)
 
         #-----------------------------------------------------------------------------
         print(" Logging Feature Importance")
@@ -288,7 +288,7 @@ def log_run(gridsearch: sklearn.model_selection.GridSearchCV,
         df_importance = pd.DataFrame({'Variable': training_columns, 'Importance':Importance})
         df_importance.sort_values(by = ['Importance'], ascending = False, inplace = True)
         df_importance.to_csv(importance_path, index=False)
-        mlflow.log_artifact(importance_path) 
+        mlflow.log_artifact(importance_path)
 
         #-----------------------------------------------------------------------------
         print(" Logging Features")
@@ -297,28 +297,28 @@ def log_run(gridsearch: sklearn.model_selection.GridSearchCV,
         features = str(training_columns)
         with open(features_path, 'w') as f:
             f.write(features)
-        mlflow.log_artifact(features_path) 
-       
-        
+        mlflow.log_artifact(features_path)
 
-        mlflow.set_tags(tags) 
+
+
+        mlflow.set_tags(tags)
 
         run_id = run.info.run_uuid
         experiment_id = run.info.experiment_id
         print(mlflow.get_artifact_uri())
         print("runID: %s" % run_id)
 
-def log_results(gridsearch: sklearn.model_selection.GridSearchCV, 
+def log_results(gridsearch: sklearn.model_selection.GridSearchCV,
                 class_accuracy: dict,
                 add_params: dict,
                 training_columns: list,
-                experiment_name : str, 
-                experiment_data_folder: str, 
-                model_name: str, 
-                tags={}, 
+                experiment_name : str,
+                experiment_data_folder: str,
+                model_name: str,
+                tags={},
                 log_only_best=False):
     """Logging of cross validation results to mlflow tracking server
-    
+
     Args:
         gridsearch (sklearn.model_selection.GridSearchCV): grid search object
         class_accuracy (dict): class accuracy
@@ -348,29 +348,27 @@ def log_results(gridsearch: sklearn.model_selection.GridSearchCV,
 
     if(log_only_best):
         log_run(gridsearch,
-                        class_accuracy, 
+                        class_accuracy,
                         add_params,
                         training_columns,
-                        model_name, 
-                        best, 
-                        experiment_data_folder, 
-                        conda_env, 
+                        model_name,
+                        best,
+                        experiment_data_folder,
+                        conda_env,
                         tags,
                         log_only_best)
     else:
         for run_index in range(len(gridsearch.cv_results_['params'])):
-            
+
             print("logging data for cv:", run_index)
 
             log_run(gridsearch,
-                        class_accuracy, 
+                        class_accuracy,
                         add_params,
                         training_columns,
-                        model_name, 
-                        run_index, 
-                        experiment_data_folder, 
-                        conda_env, 
-                        tags, 
+                        model_name,
+                        run_index,
+                        experiment_data_folder,
+                        conda_env,
+                        tags,
                         log_only_best)
-    
-    

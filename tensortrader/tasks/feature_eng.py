@@ -1,15 +1,13 @@
+import os
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pandas_ta as ta
-import os
-
+import yaml
 
 #from tensortrader.Features import feature_func as fe
 from tensortrader.Features import Feature as fe
-
-from pathlib import Path
-import yaml
-
 
 if __name__ == '__main__':
 
@@ -88,12 +86,12 @@ if __name__ == '__main__':
 
     # (5) Time Features
     if features_conf['Time_Features']:
-    
+
         time_levels =  ['month', 'day', 'hour', 'minute']
         timestamp_col = 'Date'
         data = fe.build_time_columns(data, timestamp_col, time_levels)
 
-        if features_conf['Time_Fourier_Features']:                    
+        if features_conf['Time_Fourier_Features']:
             data = fe.build_fourier_time_features(data, time_levels = ['month', 'day', 'hour', 'minute'], max_levels = [12, 30, 24, 60], drop_columns = True)
 
     # (6) Volume Features
@@ -103,7 +101,7 @@ if __name__ == '__main__':
 
     # (7) Apply Standard Scaler
     if features_conf['Apply_Standard_Scaler']:
-    
+
         if features_conf['Apply_Standard_Scaler_Lags']:
 
             cols_to_add = []
@@ -145,14 +143,10 @@ if __name__ == '__main__':
 
     sub_experiment_type = 'conf_{}_Tickers_{}_Stategy_{}'.format(feature_id, data['Ticker'].nunique(), strategy)
 
-    output_location = os.path.join(output_folder_db, 
+    output_location = os.path.join(output_folder_db,
                                 ('Feature_Engineering_{}.parquet'
                                 .format( sub_experiment_type )))
 
     print(output_location)
 
     data.to_parquet(output_location , engine = 'fastparquet', compression = 'gzip')
-
-    
-
-

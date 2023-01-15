@@ -2,8 +2,9 @@ import logging
 import sys
 from os.path import join
 
+
 # https://stackoverflow.com/questions/54591352/python-logging-new-log-file-each-loop-iteration
-def create_logging(logger_name :str, 
+def create_logging(logger_name :str,
                 level : int = logging.INFO) -> logging.Logger:
     """Method to return a custom logger with the given name and level
 
@@ -18,9 +19,9 @@ def create_logging(logger_name :str,
 
     logger.setLevel(level)
     format_string = "%(asctime)s %(message)s"
-    log_format = logging.Formatter(fmt = format_string, 
+    log_format = logging.Formatter(fmt = format_string,
                                 datefmt= '%Y-%m-%d %I:%M:%S %p')
-    
+
     # Creating and adding the console handler
     # console_handler = logging.StreamHandler(sys.stdout)
     # console_handler.setFormatter(log_format)

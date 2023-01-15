@@ -3,10 +3,8 @@
 """Tests for `tensortrader` package."""
 
 import pytest
-
 from click.testing import CliRunner
 
-from tensortrader.tasks import TBM_calculation
 from tensortrader import cli
 
 

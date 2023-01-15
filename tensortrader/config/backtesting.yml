@@ -23,7 +23,7 @@ calculate_feat_importance : False
 return_lag : 1
 long_short : [3,1]
 timestamp_col : 'Date'
-variable : 'Close' 
+variable : 'Close'
 
 # -----------------------------
 # Triple Barrier Parameters
@@ -65,14 +65,14 @@ max_n_estimators : 400
 
 # For Classification
 eval_metric_class : 'auc'
-objective_class : 'multi:softmax' 
-grow_policy_class : 'lossguide' 
+objective_class : 'multi:softmax'
+grow_policy_class : 'lossguide'
 booster_class : 'gbtree'
 
 # For Regression
-eval_metric_regress : 'rmse' 
+eval_metric_regress : 'rmse'
 objective_regress : 'reg:squarederror'
-grow_policy_regress : 'lossguide' 
+grow_policy_regress : 'lossguide'
 booster_regress : 'gbtree'
 
 # max_learning_rate
@@ -104,13 +104,13 @@ cat_columns : 'Ticker'
 # -----------------------------
 n_splits : 3 # Number of folds
 n_iter : 5 # Number of iterations for Bayesian Hyperparameter Optimizer
-test_period_length : 45 # candles 
+test_period_length : 45 # candles
 
-# None == Use all historical data available 
+# None == Use all historical data available
 # Int Value == Number of minutes to consider
-train_period_length : 'None' 
+train_period_length : 'None'
 
-# Gap between training indeces and test indeces 
+# Gap between training indeces and test indeces
 # to account for data or processes latency
 gap : 3
 

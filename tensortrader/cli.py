@@ -1,5 +1,6 @@
 """Console script for tensortrader."""
 import sys
+
 import click
 
 

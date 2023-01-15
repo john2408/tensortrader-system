@@ -17,7 +17,7 @@ logs_folder : '/mnt/d/Tensor/tensortrader-system/logs/ml_return_training_logs'
 
 
 # -----------------------------
-# 2. Neural Network Model 
+# 2. Neural Network Model
 # -----------------------------
 n_features: 1
 batch_size : 1
@@ -36,12 +36,12 @@ patience : 5
 denoising_method  : 'wavelet'
 
 # Threshold for Wavelet Denoising (from 0.0 to 1.0)
-thresh : 0.1 
+thresh : 0.1
 
 # Wavelet Transformation Function
-# 'sym2', 'sym3', 'sym4', 'sym5', 'sym6', 
+# 'sym2', 'sym3', 'sym4', 'sym5', 'sym6',
 # 'sym7', 'sym8', 'sym9', 'sym10', 'sym11',
-# 'sym12', 'sym13', 'sym14', 'sym15', 'sym16', 
+# 'sym12', 'sym13', 'sym14', 'sym15', 'sym16',
 # 'sym17', 'sym18', 'sym19', 'sym20'
 wavelet : "sym4"
 
@@ -51,7 +51,7 @@ minute_sampling : 15
 # lookback subset to PACF pattern search
 pacf_days_subset : 90
 
-# Number of hours to consider for 
+# Number of hours to consider for
 # lag pattern lookup
 nn_hours_pattern_lookup : 8
 
