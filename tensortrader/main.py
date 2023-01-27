@@ -19,7 +19,9 @@ from tensortrader.Trader.trader import BinanceTrader
 
 def main(symbol):
 
-    path = f"""/mnt/d/Tensor/tensortrader-system/tensortrader/config/trading/{symbol}.yml"""
+    path = (
+        "/mnt/d/Tensor/tensortrader-system/" "tensortrader/config/trading/{}.yml"
+    ).format(symbol)
     CONF = yaml.safe_load(Path(path).read_text())
 
     print(CONF)
@@ -79,9 +81,10 @@ def main(symbol):
     try:
         MONGO_PASSWORD = SECRETS.get("MONGO_PASSWORD")
         MONGO_USER = SECRETS.get("MONGO_USER")
-        MONGO_URL = "mongodb+srv://{}:{}@tensor-database.rjyvv.mongodb.net/?retryWrites=true&w=majority".format(
-            MONGO_USER, MONGO_PASSWORD
-        )
+        MONGO_URL = (
+            "mongodb+srv://{}:{}@tensor-database"
+            ".rjyvv.mongodb.net/?retryWrites=true&w=majority"
+        ).format(MONGO_USER, MONGO_PASSWORD)
 
         mongo_client = pymongo.MongoClient(MONGO_URL)
 

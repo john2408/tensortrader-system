@@ -8,7 +8,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.figure import Figure
 
 
-class denoising():
+class denoising:
     """Denoising class to wrap all
     timeseries denoising methods.
 
@@ -16,15 +16,14 @@ class denoising():
     denoising available.
     """
 
-    def __init__(self,
-                    signal: np.ndarray,
-                    ) -> None:
+    def __init__(
+        self,
+        signal: np.ndarray,
+    ) -> None:
 
         self.signal = signal
 
-    def wavelet_denoising(self,
-                    thresh : float,
-                    wavelet: str) -> np.ndarray:
+    def wavelet_denoising(self, thresh: float, wavelet: str) -> np.ndarray:
         """Removing High Frequency Noise from a
         timeseries using the lowpassfilter
         of the wavelet transform given a wavelet function
@@ -37,16 +36,16 @@ class denoising():
             np.ndarray: Reconstructed timeseries
         """
 
-        thresh = thresh*np.nanmax(self.signal)
-        coeff = pywt.wavedec(self.signal, wavelet, mode="per" )
-        coeff[1:] = (pywt.threshold(i, value=thresh, mode="soft" ) for i in coeff[1:])
-        reconstructed_signal = pywt.waverec(coeff, wavelet, mode="per" )
+        thresh = thresh * np.nanmax(self.signal)
+        coeff = pywt.wavedec(self.signal, wavelet, mode="per")
+        coeff[1:] = (pywt.threshold(i, value=thresh, mode="soft") for i in coeff[1:])
+        reconstructed_signal = pywt.waverec(coeff, wavelet, mode="per")
         return reconstructed_signal
 
 
-def plot_reconstructed_signal(prices_return: np.ndarray,
-                            denoised_prices_return: np.ndarray,
-                            ticker: str ) -> Figure:
+def plot_reconstructed_signal(
+    prices_return: np.ndarray, denoised_prices_return: np.ndarray, ticker: str
+) -> Figure:
     """Plot original and reconstructed timeseries.
     Args:
         prices_return (np.ndarray): original timeseries
@@ -57,22 +56,19 @@ def plot_reconstructed_signal(prices_return: np.ndarray,
         Figure: matplotlib figure
     """
 
-    fig, ax = plt.subplots(figsize=(12,4))
-    ax.plot(prices_return,
-                color="b",
-                alpha=0.99,
-                label='original signal')
-    ax.plot(denoised_prices_return,
-            'k', label='DWT smoothing', linewidth=2)
+    fig, ax = plt.subplots(figsize=(12, 4))
+    ax.plot(prices_return, color="b", alpha=0.99, label="original signal")
+    ax.plot(denoised_prices_return, "k", label="DWT smoothing", linewidth=2)
     ax.legend()
-    ax.set_title(f'Removing High Frequency Noise with DWT for {ticker}', fontsize=18)
-    ax.set_ylabel('Price Return', fontsize=16)
-    ax.set_xlabel('Sample No', fontsize=16)
+    ax.set_title(f"Removing High Frequency Noise with DWT for {ticker}", fontsize=18)
+    ax.set_ylabel("Price Return", fontsize=16)
+    ax.set_xlabel("Sample No", fontsize=16)
     return fig
 
-def generate_pdf_denoised_plots(df_prices: pd.DataFrame,
-                        storage_loc: str,
-                        file_name: str) -> None:
+
+def generate_pdf_denoised_plots(
+    df_prices: pd.DataFrame, storage_loc: str, file_name: str
+) -> None:
     """Generate PDF with denoised prices returns.
 
     Args:
@@ -86,15 +82,17 @@ def generate_pdf_denoised_plots(df_prices: pd.DataFrame,
 
     pp = PdfPages(os.path.join(storage_loc, f"{file_name}.pdf"))
 
-    for ticker in df_prices['ticker'].unique():
+    for ticker in df_prices["ticker"].unique():
 
-        df_temp = df_prices[df_prices['ticker'] == ticker].copy()
-        prices_return = df_temp['price_returns'].values
-        denoised_prices_return = df_temp['denoised_price_returns'].values
+        df_temp = df_prices[df_prices["ticker"] == ticker].copy()
+        prices_return = df_temp["price_returns"].values
+        denoised_prices_return = df_temp["denoised_price_returns"].values
 
-        denoised_plot = plot_reconstructed_signal(prices_return = prices_return,
-                                denoised_prices_return = denoised_prices_return,
-                                ticker = ticker )
+        denoised_plot = plot_reconstructed_signal(
+            prices_return=prices_return,
+            denoised_prices_return=denoised_prices_return,
+            ticker=ticker,
+        )
 
         pp.savefig(denoised_plot)
 
@@ -103,9 +101,9 @@ def generate_pdf_denoised_plots(df_prices: pd.DataFrame,
     pp.close()
 
 
-def get_significant_max_lag_pacf(pacf_values : np.ndarray,
-                                confint: np.ndarray,
-                                lags_pacf : int ) -> int:
+def get_significant_max_lag_pacf(
+    pacf_values: np.ndarray, confint: np.ndarray, lags_pacf: int
+) -> int:
     """Get significant lag levels for given time series
     Args:
         pacf_values (np.ndarray): pacf_values of reconstructed signal
@@ -143,6 +141,5 @@ def get_significant_max_lag_pacf(pacf_values : np.ndarray,
         pacf_lower_position = pacf_lower.index(True)
     except:
         pacf_lower_position = lags_pacf
-
 
     return lags_pacf - min(pacf_upper_position, pacf_lower_position)
