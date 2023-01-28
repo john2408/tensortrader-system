@@ -59,8 +59,6 @@ class ETL:
 
         if self.total_days is not None:
 
-            print("for")
-
             for lot in range(1, int(self.total_days / self.load_size_days)):
                 self._import_timestamps.append(
                     (
@@ -69,9 +67,8 @@ class ETL:
                         - timedelta(days=(lot - 1) * self.load_size_days),
                     )
                 )
-                print("adfadsfölkj")
-        else:
 
+        else:
             # To create daily updates for appending to historical data
             lot = 1
             end_time = self.start_timestamp
