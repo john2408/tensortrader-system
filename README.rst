@@ -26,25 +26,25 @@ To start run file tensortrader/task/bactesting_task.py. Change configuration on 
 * Documentation: https://tensortrader.readthedocs.io.
 
 Tensor ML Return Signal Training - Strategy
---------
+---------------------------------------------
 .. image:: img/Financial_Forecasting_Model.PNG
 
 
 Tensor Trading System
---------
+---------------------
 .. image:: img/Tensor_Trading_System.PNG
+
 
 How to:
 -------
 Install latest release then:
 
-..  code-block:: bash
-    :caption: installation
+.. code-block:: bash
 
-        pip install --force-reinstall tensortrader-0.1.0-py2.py3-none-any.whl
+    pip install --force-reinstall tensortrader-0.1.0-py2.py3-none-any.whl
 
-        # Then run bot for available Tickers
-        tensortrader --ticker BTCUSDT
+    # Then run bot for available Tickers
+    tensortrader --ticker BTCUSDT
 
 
 To Do's
