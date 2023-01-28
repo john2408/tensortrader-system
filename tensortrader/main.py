@@ -11,13 +11,8 @@ from binance.client import Client
 from tensortrader.tasks.task_utils import create_logging
 from tensortrader.Trader.trader import BinanceTrader
 
-# export PYTHONPATH="${PYTHONPATH}:/mnt/d/Tensor/tensortrader-system"
-# run -->
-#  conda activate Tensor
-#  cd tensortrader/ & python main.py BTCUSDT
 
-
-def main(symbol):
+def run(symbol):
 
     path = (
         "/mnt/d/Tensor/tensortrader-system/" "tensortrader/config/trading/{}.yml"
@@ -117,8 +112,8 @@ def main(symbol):
     # trader.start_streaming()
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    symbol = sys.argv[1]
-    # symbol = 'BTCUSDT'
-    main(symbol)
+#     symbol = sys.argv[1]
+#     # symbol = 'BTCUSDT'
+#     main(symbol)
