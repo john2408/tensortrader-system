@@ -20,5 +20,6 @@ def main(ticker):
     run(ticker)
 
 
+# Testing Script: https://click.palletsprojects.com/en/8.1.x/setuptools/#testing-the-script
 if __name__ == "__main__":
     main()  # pragma: no cover
