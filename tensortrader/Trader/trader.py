@@ -122,15 +122,15 @@ class BinanceTrader:
         """
 
         # extract the required items from msg
-        event_time = pd.to_datetime(msg["E"], unit="ms")
         # start_time = pd.to_datetime(msg["k"]["t"], unit="ms")
         # first = float(msg["k"]["o"])
         # high = float(msg["k"]["h"])
         # low = float(msg["k"]["l"])
-        close = float(msg["k"]["c"])
         # volume = float(msg["k"]["v"])
         # complete = msg["k"]["x"]
 
+        event_time = pd.to_datetime(msg["E"], unit="ms")
+        close = float(msg["k"]["c"])
         self.current_price = close
         self.event_time = event_time
 
@@ -160,8 +160,9 @@ class BinanceTrader:
     def get_signal_data(self) -> None:
         """Reading new signal data from database."""
 
-        df_signal = pd.read_parquet(self.signal_loc)
+        self.logger.info("Reading new Signal from database {}".format(self.signal_loc))
 
+        df_signal = pd.read_parquet(self.signal_loc)
         df_signal = df_signal[df_signal["ticker"] == self.symbol].copy()
 
         # Get latest signal data
@@ -313,12 +314,24 @@ class BinanceTrader:
         """
         For any new ML based signal execute a new trade or keep position.
         """
-
-        # Get Latest Trading Signals
-        self.get_signal_data()
-
         # Log Status every two minutes
         current_timestamp = datetime.now()
+
+        # Check new signal at the beginning of every minute
+        check_new_signal = current_timestamp.second == 0
+        if check_new_signal:
+            self.get_signal_data()
+
+            if self.new_signal():
+
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                info = "{} New Signal available".format(timestamp)
+                print(info)
+                self.logger.info(info)
+
+                self.execute_trades()
+
         log_info = (current_timestamp.minute % 2 == 0) and (
             current_timestamp.second == 0
         )
@@ -335,16 +348,6 @@ class BinanceTrader:
             )
             print(info)
             self.logger.info(info)
-
-        if self.new_signal():
-
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-            info = "{} New Signal available".format(timestamp)
-            print(info)
-            self.logger.info(info)
-
-            self.execute_trades()
 
     def calculate_target_stop(self) -> None:
         """Define Target and Stops trails
@@ -714,7 +717,7 @@ class BinanceTrader:
                 # stop trading session
                 if stop_session:
 
-                    info = "Max number of trades reached." "Ending trading session."
+                    info = "Max number of trades reached. Ending trading session."
                     print(info)
                     self.logger.info(info)
                     break

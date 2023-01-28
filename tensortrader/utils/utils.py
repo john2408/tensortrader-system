@@ -1,5 +1,5 @@
-import datetime
 import os
+from datetime import datetime, fromtimestamp
 
 import pandas as pd
 import pytz
@@ -36,10 +36,10 @@ def todatetime(t):
     """
     Convert Unix timestamp to datetime.
     """
-    return datetime.fromtimestamp(t / 1000)
+    return fromtimestamp(t / 1000)
 
 
-def utc_to_local(utc_dt: datetime.datetime, local_tz: pytz.tzfile) -> datetime.datetime:
+def utc_to_local(utc_dt: datetime, local_tz: pytz.tzfile) -> datetime:
     """Convert UTC datetime to local time
 
     Args:
