@@ -34,6 +34,19 @@ Tensor Trading System
 --------
 .. image:: img/Tensor_Trading_System.PNG
 
+How to:
+-------
+Install latest release then:
+
+..  code-block:: bash
+    :caption: installation
+
+        pip install --force-reinstall tensortrader-0.1.0-py2.py3-none-any.whl
+
+        # Then run bot for available Tickers
+        tensortrader --ticker BTCUSDT
+
+
 To Do's
 --------
 

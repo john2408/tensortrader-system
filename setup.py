@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
 """The setup script."""
+# Install wheel as
+# pip install --force-reinstall tensortrader-0.1.0-py2.py3-none-any.whl
+# Then run bot as from bash as
+# tensortrader --ticker BTCUSDT
 
 from setuptools import find_packages, setup
 
@@ -13,7 +17,8 @@ with open("HISTORY.rst") as history_file:
 requirements = [
     "Click>=7.0",
     "dnspython==2.1.0",
-    "fastparquet==0.8.1" "imbalanced-learn==0.9.1",
+    "fastparquet>=0.8.1",
+    "imbalanced-learn==0.9.1",
     "keras==2.11.0",
     "keras-tcn==3.5.0",
     "matplotlib==3.5.2",
