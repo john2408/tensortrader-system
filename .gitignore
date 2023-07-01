@@ -6,6 +6,7 @@ config.json
 logs/
 # C extensions
 *.so
+binance_trader.ipynb
 
 # Distribution / packaging
 .Python
