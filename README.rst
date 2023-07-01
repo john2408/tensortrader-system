@@ -23,7 +23,7 @@ Using Python Binance API.
 To start run file tensortrader/task/bactesting_task.py. Change configuration on backtesting.yml and feature_eng.yml.
 
 * Free software: MIT license
-* Documentation: https://tensortrader.readthedocs.io.
+* App: https://tensortrader-app.onrender.com/.
 
 Tensor ML Return Signal Training - Strategy
 ---------------------------------------------
