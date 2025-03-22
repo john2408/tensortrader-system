@@ -10,7 +10,6 @@ from pathlib import Path
 import yaml
 
 from tensortrader.constants import *
-
 # Import tensortrader functions
 from tensortrader.ETL.ETL_func import *
 from tensortrader.ML.label_methods import *

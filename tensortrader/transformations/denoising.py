@@ -16,7 +16,10 @@ class denoising:
     denoising available.
     """
 
-    def __init__(self, signal: np.ndarray,) -> None:
+    def __init__(
+        self,
+        signal: np.ndarray,
+    ) -> None:
 
         self.signal = signal
 

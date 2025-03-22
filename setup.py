@@ -59,7 +59,11 @@ setup(
         "Programming Language :: Python :: 3.8",
     ],
     description="Tensor Algorithmic Trader",
-    entry_points={"console_scripts": ["tensortrader=tensortrader.cli:main",],},
+    entry_points={
+        "console_scripts": [
+            "tensortrader=tensortrader.cli:main",
+        ],
+    },
     install_requires=requirements,
     license="MIT license",
     long_description=readme + "\n\n" + history,

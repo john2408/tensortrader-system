@@ -709,7 +709,10 @@ def calculate_rolling_features(
 
 
 def calculate_prob_distribution_features(
-    data: pd.DataFrame, target_variable: str, short: int = 5, long: int = 10,
+    data: pd.DataFrame,
+    target_variable: str,
+    short: int = 5,
+    long: int = 10,
 ):
     """Function daily probability of riksk and target entry
 

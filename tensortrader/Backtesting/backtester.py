@@ -6,7 +6,6 @@ import fastparquet
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
 # Tensortrader functions
 from Backtesting.bt_helpers import *
 from matplotlib.backends.backend_pdf import PdfPages
@@ -27,7 +26,7 @@ class Backtester:
 
         # Cost Analysis
         dec_points = len(str(Close.values[0]).split(".")[1])
-        spread = 2 * 1 / (10 ** dec_points)  # pips == fourth price decimal
+        spread = 2 * 1 / (10**dec_points)  # pips == fourth price decimal
         half_spread = spread / 2  # absolute tc per trade (position change +-1)
         ptc = (
             half_spread / Close.mean()
