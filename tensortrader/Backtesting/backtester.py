@@ -6,16 +6,16 @@ import fastparquet
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
 # Tensortrader functions
 from Backtesting.bt_helpers import *
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.figure import Figure
 
-warnings.filterwarnings('ignore')
+warnings.filterwarnings("ignore")
 
 
-class Backtester():
-
+class Backtester:
     def __init__(self, logger: logging.Logger) -> None:
         """
         Args:
@@ -23,29 +23,30 @@ class Backtester():
         """
         self.logger = logger
 
-
-    def trading_cost(self,
-                    Close: pd.Series,
-                    trading_fee: float ) -> float:
+    def trading_cost(self, Close: pd.Series, trading_fee: float) -> float:
 
         # Cost Analysis
         dec_points = len(str(Close.values[0]).split(".")[1])
-        spread = 2 * 1 / (10 ** dec_points) # pips == fourth price decimal
-        half_spread = spread / 2 # absolute tc per trade (position change +-1)
-        ptc = half_spread / Close.mean() # proportional tc per trade (position change +-1)
+        spread = 2 * 1 / (10 ** dec_points)  # pips == fourth price decimal
+        half_spread = spread / 2  # absolute tc per trade (position change +-1)
+        ptc = (
+            half_spread / Close.mean()
+        )  # proportional tc per trade (position change +-1)
 
         # add trading fee to position trading cost
         ptc += trading_fee
 
         return ptc
 
-    def vectorize_backtesting(self,
-                          ds: pd.DataFrame,
-                          backtesting_folder :str,
-                          y_pred: np.array = None,
-                          test_size_performance: int = 0.3,
-                          modus: str = 'signal_validation',
-                          **kwargs) -> pd.DataFrame:
+    def vectorize_backtesting(
+        self,
+        ds: pd.DataFrame,
+        backtesting_folder: str,
+        y_pred: np.array = None,
+        test_size_performance: int = 0.3,
+        modus: str = "signal_validation",
+        **kwargs,
+    ) -> pd.DataFrame:
         """Calculate vectorized backtesting for a given trading signal
         or the output of a trained ML model on a signal.
 
@@ -77,136 +78,141 @@ class Backtester():
         """
 
         add_params = {}
-        for key , value in kwargs.items():
+        for key, value in kwargs.items():
             print("key: ", key, " value", value)
             add_params[key] = value
 
-        use_metalabels = add_params.get('use_metalabels', False)
-        use_adj_strategy = add_params.get('use_adj_strategy', False)
-        v_barrier_minutes = add_params.get('v_barrier_minutes', None)
-        trading_fee = add_params.get('trading_fee', 0.001)
-
+        use_metalabels = add_params.get("use_metalabels", False)
+        use_adj_strategy = add_params.get("use_adj_strategy", False)
+        v_barrier_minutes = add_params.get("v_barrier_minutes", None)
+        trading_fee = add_params.get("trading_fee", 0.001)
 
         # Get trading cost
-        ptc = self.trading_cost(ds['Close'], trading_fee)
+        ptc = self.trading_cost(ds["Close"], trading_fee)
 
         # Add Sell/Buy/Neutral Decision depending on analysis type
-        if modus == 'signal_validation':
+        if modus == "signal_validation":
             pass
-            #df.loc[:,"label"] = df["label"] # Just to make explit that TBM Decisions stay the same
-        if modus == 'ML_performance':
+            # df.loc[:,"label"] = df["label"] # Just to make explit that TBM Decisions stay the same
+        if modus == "ML_performance":
 
-            df_ref = pd.DataFrame(index = y_pred.index)
+            df_ref = pd.DataFrame(index=y_pred.index)
             df_ref["label"] = y_pred
 
             print(ds.shape)
-            ds = (ds.drop(columns = 'label')
-                .set_index(['Ticker','Date']))
+            ds = ds.drop(columns="label").set_index(["Ticker", "Date"])
 
             ds = df_ref.join(ds).reset_index()
 
             print(ds.shape)
 
-
         # Columns to keep
-        cols = ['Date', 'Close','Volume','label', 'Ticker']
+        cols = ["Date", "Close", "Volume", "label", "Ticker"]
         if use_metalabels:
-            cols.append('metalabel')
+            cols.append("metalabel")
 
         # Create PDF to store the plots
         pp = PdfPages(join(backtesting_folder, f"{modus}.pdf"))
 
         backtesting = []
 
-        for ticker in ds['Ticker'].unique():
+        for ticker in ds["Ticker"].unique():
 
-            df = ds[ds['Ticker'] == ticker].copy()
+            df = ds[ds["Ticker"] == ticker].copy()
 
             # Analyse TBM Performance in Test Set
             # if not given usingdata set split percentage of 70%
-            if modus == 'signal_validation':
+            if modus == "signal_validation":
 
-                split_percentage = add_params.get('split_percentage',  1 - test_size_performance)
-                split = int(split_percentage*len(df))
+                split_percentage = add_params.get(
+                    "split_percentage", 1 - test_size_performance
+                )
+                split = int(split_percentage * len(df))
                 df = df[split:].filter(cols).copy()
-                df.reset_index(inplace = True)
+                df.reset_index(inplace=True)
 
-            if modus == 'ML_performance':
+            if modus == "ML_performance":
 
                 df = df.filter(cols).copy()
-                df.reset_index(inplace = True)
+                df.reset_index(inplace=True)
 
             print("\nAnalyzing performance for ", ticker)
 
             # Calculate Close return
             # and
-            df.loc[:,'Return'] = df['Close'].pct_change(1)
-            df.loc[:,'buy_hold'] = df["Return"].cumsum().apply(np.exp)
+            df.loc[:, "Return"] = df["Close"].pct_change(1)
+            df.loc[:, "buy_hold"] = df["Return"].cumsum().apply(np.exp)
 
             # Calculate Cumulative Return for buy_hold and ML Strategy
-            df.loc[:,'ml_return'] = df['label'].shift(1)* df['Return']
-            df.loc[:,'ml_performance'] = df["ml_return"].cumsum().apply(np.exp)
+            df.loc[:, "ml_return"] = df["label"].shift(1) * df["Return"]
+            df.loc[:, "ml_performance"] = df["ml_return"].cumsum().apply(np.exp)
 
             if use_adj_strategy:
 
-                col_labels = 'label'
-                col_name_strategy = 'label_adj'
-                col_name_strategy_return = 'ml_adj_return'
-                col_name_strategy_cum_return = 'ml_adj_performance'
+                col_labels = "label"
+                col_name_strategy = "label_adj"
+                col_name_strategy_return = "ml_adj_return"
+                col_name_strategy_cum_return = "ml_adj_performance"
 
-                df = self.calculate_labels_return(df,
-                                col_labels,
-                                col_name_strategy,
-                                col_name_strategy_return,
-                                col_name_strategy_cum_return,
-                                v_barrier_minutes,
-                                )
+                df = self.calculate_labels_return(
+                    df,
+                    col_labels,
+                    col_name_strategy,
+                    col_name_strategy_return,
+                    col_name_strategy_cum_return,
+                    v_barrier_minutes,
+                )
 
-            if use_metalabels and not (modus == 'ML_performance'):
+            if use_metalabels and not (modus == "ML_performance"):
 
-                col_labels = 'metalabel'
-                col_name_strategy = 'metalabel_adj'
-                col_name_strategy_return = 'meta_return'
-                col_name_strategy_cum_return = 'meta_performance'
+                col_labels = "metalabel"
+                col_name_strategy = "metalabel_adj"
+                col_name_strategy_return = "meta_return"
+                col_name_strategy_cum_return = "meta_performance"
 
-                df = self.calculate_labels_return(df,
-                                col_labels,
-                                col_name_strategy,
-                                col_name_strategy_return,
-                                col_name_strategy_cum_return,
-                                v_barrier_minutes,
-                                )
+                df = self.calculate_labels_return(
+                    df,
+                    col_labels,
+                    col_name_strategy,
+                    col_name_strategy_return,
+                    col_name_strategy_cum_return,
+                    v_barrier_minutes,
+                )
 
             # -------------------------------------------
             # Cost Calculation
             # -------------------------------------------
             # Cost Calculation ML Strategy
-            df = self.cost_analysis(df,
-                        col_name_strategy = 'label' ,
-                        col_name_strategy_return = 'ml_return',
-                        col_name_strategy_cum_return  = 'ml_performance',
-                        ptc = ptc)
+            df = self.cost_analysis(
+                df,
+                col_name_strategy="label",
+                col_name_strategy_return="ml_return",
+                col_name_strategy_cum_return="ml_performance",
+                ptc=ptc,
+            )
 
             # Cost Calculation Adj Strategy or Metalabels
             if use_adj_strategy or use_metalabels:
-                df = self.cost_analysis(df,
-                        col_name_strategy,
-                        col_name_strategy_return,
-                        col_name_strategy_cum_return,
-                        ptc = ptc)
-
-
+                df = self.cost_analysis(
+                    df,
+                    col_name_strategy,
+                    col_name_strategy_return,
+                    col_name_strategy_cum_return,
+                    ptc=ptc,
+                )
 
             # -------------------------------------------
             # Plot Backtesting Performance
             # -------------------------------------------
 
-            backtest_plot = self.plot_strategy_performance(df,
-                                    use_adj_strategy,
-                                    use_metalabels,
-                                    modus,
-                                    ticker,
-                                    col_name_strategy_cum_return)
+            backtest_plot = self.plot_strategy_performance(
+                df,
+                use_adj_strategy,
+                use_metalabels,
+                modus,
+                ticker,
+                col_name_strategy_cum_return,
+            )
             # Save plot to PDF
             pp.savefig(backtest_plot)
 
@@ -216,10 +222,9 @@ class Backtester():
 
         return pd.concat(backtesting)
 
-    def store_backtesting_results_parquet(self,
-                                backtesting_df: pd.DataFrame,
-                                file_name: str,
-                                storage_folder: str ) -> None:
+    def store_backtesting_results_parquet(
+        self, backtesting_df: pd.DataFrame, file_name: str, storage_folder: str
+    ) -> None:
         """Store backtesting results as parquet file
 
         Args:
@@ -227,17 +232,18 @@ class Backtester():
             storage_folder (str): Storage Location
         """
 
-        data_storage_loc = join( storage_folder, file_name)
+        data_storage_loc = join(storage_folder, file_name)
         backtesting_df.to_parquet(data_storage_loc)
 
-    def calculate_labels_return(self,
-                            df: pd.DataFrame,
-                            col_labels: str,
-                            col_name_strategy: str,
-                            col_name_strategy_return: str,
-                            col_name_strategy_cum_return: str,
-                            v_barrier_minutes: int
-                             ) -> pd.DataFrame:
+    def calculate_labels_return(
+        self,
+        df: pd.DataFrame,
+        col_labels: str,
+        col_name_strategy: str,
+        col_name_strategy_return: str,
+        col_name_strategy_cum_return: str,
+        v_barrier_minutes: int,
+    ) -> pd.DataFrame:
         """Calculate the return and cumulative
         return a given strategy.
 
@@ -253,19 +259,26 @@ class Backtester():
             pd.DataFrame: Input dataframe with additional 3 columns for the strategy return
         """
 
-        df.loc[:,col_name_strategy]  = self.adj_ml_strategy(df[col_labels], v_barrier_minutes )
-        df.loc[:,col_name_strategy_return] = df.loc[:,col_name_strategy].shift(1)* df['Return']
-        df.loc[:,col_name_strategy_cum_return] = df[col_name_strategy_return].cumsum().apply(np.exp)
+        df.loc[:, col_name_strategy] = self.adj_ml_strategy(
+            df[col_labels], v_barrier_minutes
+        )
+        df.loc[:, col_name_strategy_return] = (
+            df.loc[:, col_name_strategy].shift(1) * df["Return"]
+        )
+        df.loc[:, col_name_strategy_cum_return] = (
+            df[col_name_strategy_return].cumsum().apply(np.exp)
+        )
 
         return df
 
-
-    def cost_analysis(self,
-                  df : pd.DataFrame,
-                  col_name_strategy: str,
-                  col_name_strategy_return: str,
-                  col_name_strategy_cum_return: str,
-                  ptc : float) -> pd.DataFrame:
+    def cost_analysis(
+        self,
+        df: pd.DataFrame,
+        col_name_strategy: str,
+        col_name_strategy_return: str,
+        col_name_strategy_cum_return: str,
+        ptc: float,
+    ) -> pd.DataFrame:
         """Cost analysis.
 
         Args:
@@ -279,10 +292,7 @@ class Backtester():
             pd.DataFrame: Input dataframe with net return analysis
         """
 
-        prefices = {'label': '',
-                    'metalabel_adj' : '_meta',
-                    'label_adj' : '_adj'}
-
+        prefices = {"label": "", "metalabel_adj": "_meta", "label_adj": "_adj"}
 
         col_prefix = prefices.get(col_name_strategy)
 
@@ -291,30 +301,38 @@ class Backtester():
         df[f"n_trader_ml{col_prefix}"] = df[col_name_strategy].diff().fillna(0).abs()
 
         # Spread and trading Cost
-        df[f'cost_ml{col_prefix}'] = df[f'n_trader_ml{col_prefix}'] * ptc
+        df[f"cost_ml{col_prefix}"] = df[f"n_trader_ml{col_prefix}"] * ptc
 
         # Total cost in USDT units
-        df[f'cost_ml{col_prefix}_USDT'] = df[f'cost_ml{col_prefix}'] * df['Close']
+        df[f"cost_ml{col_prefix}_USDT"] = df[f"cost_ml{col_prefix}"] * df["Close"]
 
         # Strategy Return after cost
-        df[f'ml_strategy{col_prefix}_c'] = df[col_name_strategy_return] - df[f'cost_ml{col_prefix}']
+        df[f"ml_strategy{col_prefix}_c"] = (
+            df[col_name_strategy_return] - df[f"cost_ml{col_prefix}"]
+        )
 
         # Calculate Net Profit
-        df[f'ml_strategy{col_prefix}_net'] = df[f'ml_strategy{col_prefix}_c'].cumsum().apply(np.exp)
+        df[f"ml_strategy{col_prefix}_net"] = (
+            df[f"ml_strategy{col_prefix}_c"].cumsum().apply(np.exp)
+        )
 
-        initial_investment = df['Close'].values[0]
-        final_return = df[f'ml_strategy{col_prefix}_net'].values[-1]
-        final_investment = initial_investment*(1+final_return)
-        total_trading_cost = df[f'cost_ml{col_prefix}_USDT'].sum()
+        initial_investment = df["Close"].values[0]
+        final_return = df[f"ml_strategy{col_prefix}_net"].values[-1]
+        final_investment = initial_investment * (1 + final_return)
+        total_trading_cost = df[f"cost_ml{col_prefix}_USDT"].sum()
         performance_ml = final_investment
 
-        summary_str = ("""\nML Strategy: Saldo after Backtesting for {}
-                size 1 unit of the Coin $USD""".format(col_name_strategy_cum_return) +
-        "\n Initial Investment: {}".format(np.round(initial_investment, 2) ) +
-        "\n Final Performance: {}".format( np.round(performance_ml, 2)) +
-        "\n Performance Return: {}".format(np.round(final_return, 2)) +
-        "\nNumber of Trades: {}".format( df.n_trader_ml.sum()/2) +
-        "\nTotal Cost USDT: {}".format( np.round( total_trading_cost, 2)))
+        summary_str = (
+            """\nML Strategy: Saldo after Backtesting for {}
+                size 1 unit of the Coin $USD""".format(
+                col_name_strategy_cum_return
+            )
+            + "\n Initial Investment: {}".format(np.round(initial_investment, 2))
+            + "\n Final Performance: {}".format(np.round(performance_ml, 2))
+            + "\n Performance Return: {}".format(np.round(final_return, 2))
+            + "\nNumber of Trades: {}".format(df.n_trader_ml.sum() / 2)
+            + "\nTotal Cost USDT: {}".format(np.round(total_trading_cost, 2))
+        )
 
         self.logger.info(summary_str)
 
@@ -322,14 +340,15 @@ class Backtester():
 
         return df
 
-    def plot_strategy_performance(self,
-                              df: pd.DataFrame,
-                              use_adj_strategy: bool,
-                              use_metalabels: bool,
-                              modus: str,
-                              ticker: str,
-                              col_name_strategy_cum_return: str = None,
-                              ) -> Figure:
+    def plot_strategy_performance(
+        self,
+        df: pd.DataFrame,
+        use_adj_strategy: bool,
+        use_metalabels: bool,
+        modus: str,
+        ticker: str,
+        col_name_strategy_cum_return: str = None,
+    ) -> Figure:
         """Plot Strategy Return Performance.
 
         Args:
@@ -343,8 +362,8 @@ class Backtester():
         """
 
         # Reset Timestamp index
-        df.reset_index(inplace = True)
-        timecolumn = 'Date'
+        df.reset_index(inplace=True)
+        timecolumn = "Date"
 
         plot = plt.figure(figsize=(12, 6))
         print(type(plot))
@@ -355,24 +374,32 @@ class Backtester():
 
             plt.plot(df[timecolumn], df["ml_strategy_adj_net"])
 
-            if modus == 'signal_validation':
-                plt.legend(["buy_hold", "Signal_performance", f"Signal_{col_name_strategy_cum_return}"])
+            if modus == "signal_validation":
+                plt.legend(
+                    [
+                        "buy_hold",
+                        "Signal_performance",
+                        f"Signal_{col_name_strategy_cum_return}",
+                    ]
+                )
             else:
                 plt.legend(["buy_hold", "ml_performance", col_name_strategy_cum_return])
         else:
             plt.legend(["buy_hold", "ml_performance"])
 
-        plt.title(f"""Cumulative return of buy-and-hold
+        plt.title(
+            f"""Cumulative return of buy-and-hold
                 vs machine learning
-                from {df[timecolumn].min()} - {df[timecolumn].max()}, ticker {ticker}""", fontsize=11)
+                from {df[timecolumn].min()} - {df[timecolumn].max()}, ticker {ticker}""",
+            fontsize=11,
+        )
         plt.show()
 
         return plot
 
-    def adj_ml_strategy(self,
-                    _input : np.array,
-                    v_barrier_minutes : int,
-                    verbose :int = 0) -> np.array:
+    def adj_ml_strategy(
+        self, _input: np.array, v_barrier_minutes: int, verbose: int = 0
+    ) -> np.array:
         """
         Adjust trading signals based on different
         rules.
@@ -399,14 +426,13 @@ class Backtester():
         index = 0
         adj_pred = []
 
-        while(index < n_signals):
+        while index < n_signals:
 
             if _input[index] == 1:
 
-
                 index += 1
                 adj_pred.append(1)
-                if index > n_signals -1:
+                if index > n_signals - 1:
                     break
                 if verbose > 1:
                     print(index, ": old value ", _input[index], "new value", 1)
@@ -416,12 +442,11 @@ class Backtester():
                     adj_pred.append(0)
                     index += 1
 
-                    if index > n_signals -1:
+                    if index > n_signals - 1:
                         break
 
                     if verbose > 1:
                         print(index, ": old value for", _input[index], "new value:", 0)
-
 
                 if index < n_signals:
                     adj_pred.append(-1)
@@ -437,7 +462,7 @@ class Backtester():
                 break
 
             adj_pred.append(0)
-            index +=1
+            index += 1
 
             if verbose > 1:
                 print(index, ": old value", _input[index], "new value", 0)

@@ -1,9 +1,9 @@
 import numpy as np
 
 
-def adj_ml_strategy(_input : np.array,
-                   v_barrier_minutes : int,
-                   verbose :int = 0) -> np.array:
+def adj_ml_strategy(
+    _input: np.array, v_barrier_minutes: int, verbose: int = 0
+) -> np.array:
     """
     Adjust trading signals based on different
     rules.
@@ -30,14 +30,13 @@ def adj_ml_strategy(_input : np.array,
     index = 0
     adj_pred = []
 
-    while(index < n_signals):
+    while index < n_signals:
 
         if _input[index] == 1:
 
-
             index += 1
             adj_pred.append(1)
-            if index > n_signals -1:
+            if index > n_signals - 1:
                 break
             if verbose > 1:
                 print(index, ": old value ", _input[index], "new value", 1)
@@ -47,12 +46,11 @@ def adj_ml_strategy(_input : np.array,
                 adj_pred.append(0)
                 index += 1
 
-                if index > n_signals -1:
+                if index > n_signals - 1:
                     break
 
                 if verbose > 1:
                     print(index, ": old value for", _input[index], "new value:", 0)
-
 
             if index < n_signals:
                 adj_pred.append(-1)
@@ -68,7 +66,7 @@ def adj_ml_strategy(_input : np.array,
             break
 
         adj_pred.append(0)
-        index +=1
+        index += 1
 
         if verbose > 1:
             print(index, ": old value", _input[index], "new value", 0)

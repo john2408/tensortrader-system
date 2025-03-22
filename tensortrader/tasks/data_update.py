@@ -112,6 +112,14 @@ class ETL_update_task(task):
 
 if __name__ == "__main__":
 
+    SYMBOLS = [
+        # "MKRUSDT",
+        "XMRBTC",
+        # "TRXUSDT",
+        "XLMUSDT",
+        # "IOTAUSDT",
+    ]
+
     load_size_days = 5
     start_time_stamp = None
     end_timestamp = datetime.utcnow() - timedelta(

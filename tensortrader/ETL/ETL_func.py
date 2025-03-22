@@ -472,10 +472,7 @@ class DataLoader:
     parameter.
     """
 
-    def __init__(
-        self,
-        input_folder_db: str,
-    ) -> None:
+    def __init__(self, input_folder_db: str,) -> None:
         """
         Args:
             input_folder_db (str): database folder
@@ -548,11 +545,7 @@ class DataLoader:
 
         return data
 
-    def resampling(
-        self,
-        df: pd.DataFrame,
-        resampling_value: str,
-    ) -> pd.DataFrame:
+    def resampling(self, df: pd.DataFrame, resampling_value: str,) -> pd.DataFrame:
         """Resample data frame
         of the form OHLCVNT
         -> Open, High, Low, Close, Volume,
