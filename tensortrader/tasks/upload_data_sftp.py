@@ -24,6 +24,7 @@ def transfer_files(local_folder, target_folder, overwrite=False):
 
             if os.path.isfile(local_path):
                 if overwrite or not sftp.exists(remote_path):
+                    print(f"Uploading File {filename} to {remote_path} ...")
                     sftp.put(local_path, remote_path)  # Upload file
                     print(f"File {filename} uploaded successfully to {remote_path}")
                 else:
@@ -35,7 +36,7 @@ def transfer_files(local_folder, target_folder, overwrite=False):
 if __name__ == "__main__":
     
     SYMBOLS = [
-        "BTCUSDT",
+        #"BTCUSDT",
         "ETHUSDT",
         "LTCUSDT",
         "ADAUSDT",
