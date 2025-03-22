@@ -112,13 +112,16 @@ class ETL_update_task(task):
 
 if __name__ == "__main__":
 
-    SYMBOLS = [
-        # "MKRUSDT",
-        "XMRBTC",
-        # "TRXUSDT",
-        "XLMUSDT",
-        # "IOTAUSDT",
-    ]
+    # SYMBOLS = [
+    #     # "MKRUSDT",
+    #     "XMRBTC",
+    #     # "TRXUSDT",
+    #     "XLMUSDT",
+    #     # "IOTAUSDT",
+    # ]
+    
+    SYMBOLS.remove("XMRBTC")
+    SYMBOLS.remove("XLMUSDT")
 
     load_size_days = 5
     start_time_stamp = None
